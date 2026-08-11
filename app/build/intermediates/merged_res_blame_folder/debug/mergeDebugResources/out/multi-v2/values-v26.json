@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.fumak.scanner.app-mergeDebugResources-57:/values-v26/values-v26.xml",
+            "outputFile": "com.fumak.scanner.app-mergeDebugResources-66:/values-v26/values-v26.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\MSI\\.gradle\\caches\\8.9\\transforms\\0e0a33c39d5648c17f725a6a7fff0c49\\transformed\\appcompat-1.6.1\\res\\values-v26\\values-v26.xml",
+                    "source": "C:\\Users\\MSI\\.gradle\\caches\\8.9\\transforms\\cab2b588a4a62e282fb48abc65f0d526\\transformed\\appcompat-1.6.1\\res\\values-v26\\values-v26.xml",
                     "from": {
                         "startLines": "2,3,4,8,12,16",
                         "startColumns": "4,4,4,4,4,4",
