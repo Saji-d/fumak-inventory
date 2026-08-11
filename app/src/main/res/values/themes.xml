@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.FumakScanner" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@color/fumak_background</item>
+        <item name="android:windowBackground">@color/fumak_background</item>
+    </style>
+</resources>
