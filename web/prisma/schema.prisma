@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id                 Int      @id @default(autoincrement())
+  barcodeValue       String   @unique
+  name               String
+  category           String // constrained by UI to: "Clothing" | "Shoes" | "Bags" | "Accessories"
+  color              String?
+  variant            String? // size/variant, e.g. "XL"
+  buyingPricePoisha  Int
+  sellingPricePoisha Int
+  currentStock       Int
+  archived           Boolean  @default(false) // "delete" = archive, never hard-delete
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  inventoryTxns InventoryTransaction[]
+  saleItems     SaleItem[]
+}
+
+model InventoryTransaction {
+  id             Int      @id @default(autoincrement())
+  productId      Int
+  type           String // "ADD" | "REMOVE" | "ADJUST" | "SALE"
+  quantityDelta  Int // signed
+  resultingStock Int // snapshot of stock AFTER this event
+  reason         String?
+  saleId         Int?
+  timestamp      DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sale    Sale?   @relation(fields: [saleId], references: [id], onDelete: SetNull)
+}
+
+model Sale {
+  id           Int      @id @default(autoincrement())
+  timestamp    DateTime @default(now())
+  paymentType  String // "CASH" | "CARD" | "MOBILE_MONEY" | "OTHER"
+  totalAmount  Int
+  amountPaid   Int
+  amountDue    Int
+  changeAmount Int
+
+  items         SaleItem[]
+  inventoryTxns InventoryTransaction[]
+}
+
+model SaleItem {
+  id                     Int @id @default(autoincrement())
+  saleId                 Int
+  productId              Int
+  quantity               Int
+  sellingPriceEachPoisha Int
+  buyingCostEachPoisha   Int
+  discountPoisha         Int
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+}
+
+model AppSettings {
+  id                Int    @id @default(1)
+  lowStockThreshold Int    @default(5)
+  currencySymbol    String @default("৳")
+}
