@@ -1,0 +1,46 @@
+# Root .gitignore for the FUMAK monorepo (Android app/ + web/ Next.js app).
+# web/ also has its own .gitignore for Node/Next.js/Prisma-specific rules;
+# these two files are additive, not conflicting — git applies both.
+
+# Environment / secrets (defense in depth; web/.gitignore also covers this)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Node / general JS tooling, in case any tooling ever runs from repo root
+node_modules/
+dist/
+build/
+coverage/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# --- Android / Gradle ---
+# Local SDK path — machine-specific, never shared
+local.properties
+
+# Gradle
+.gradle/
+app/build/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# JVM crash artifacts (e.g. from sdkmanager/gradle OOM crashes)
+hs_err_pid*.log
+replay_pid*.log
