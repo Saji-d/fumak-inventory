@@ -1,12 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  BadgePercent,
+  BarChart3,
+  Coins,
+  CreditCard,
+  Package,
+  Receipt,
+  ShoppingBag,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
 import { useFetch } from "@/lib/useFetch";
 import type { AnalyticsPeriod, AnalyticsSummary } from "@/lib/types";
 import { formatMoney, formatNumber } from "@/lib/money";
 import type { ChartRange } from "@/lib/analytics";
 import { StatCard } from "@/components/ui/StatCard";
-import { LoadingState } from "@/components/ui/LoadingState";
+import { LoadingState, SkeletonStatGrid } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { RevenueChart, type RevenueChartPoint } from "@/components/charts/RevenueChart";
 
@@ -28,6 +39,33 @@ const RANGE_OPTIONS: { value: ChartRange; label: string }[] = [
 interface SummaryResponse extends AnalyticsSummary {
   start: string;
   end: string;
+}
+
+function SegmentedControl<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="inline-flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => onChange(opt.value)}
+          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors duration-150 ${
+            value === opt.value ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 export default function AnalyticsPage() {
@@ -54,22 +92,10 @@ export default function AnalyticsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap gap-1.5">
-          {PERIOD_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setPeriod(opt.value)}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                period === opt.value ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+      <div className="card flex flex-col gap-3 p-4">
+        <SegmentedControl options={PERIOD_OPTIONS} value={period} onChange={setPeriod} />
         {period === "custom" ? (
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-3">
             <label className="flex items-center gap-2 text-sm text-slate-600">
               From
               <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="input w-auto" />
@@ -83,46 +109,38 @@ export default function AnalyticsPage() {
       </div>
 
       {!summaryEnabled ? (
-        <p className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+        <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
           Choose a start and end date to see custom-range analytics.
         </p>
       ) : summaryLoading ? (
-        <LoadingState label="Loading summary…" />
+        <SkeletonStatGrid count={8} />
       ) : summaryError ? (
         <ErrorState message={summaryError} onRetry={refetchSummary} />
       ) : summary ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          <StatCard label="Total Revenue" value={formatMoney(summary.totalRevenuePoisha)} />
-          <StatCard label="Items Sold" value={formatNumber(summary.totalItemsSold)} />
-          <StatCard label="Buying Cost" value={formatMoney(summary.totalBuyingCostPoisha)} />
-          <StatCard label="Gross Profit" value={formatMoney(summary.grossProfitPoisha)} />
-          <StatCard label="Discounts Given" value={formatMoney(summary.totalDiscountPoisha)} />
-          <StatCard label="Amount Paid" value={formatMoney(summary.totalPaidPoisha)} />
+          <StatCard label="Total Revenue" value={formatMoney(summary.totalRevenuePoisha)} icon={Coins} tone="violet" />
+          <StatCard label="Items Sold" value={formatNumber(summary.totalItemsSold)} icon={Package} tone="blue" />
+          <StatCard label="Buying Cost" value={formatMoney(summary.totalBuyingCostPoisha)} icon={ShoppingBag} tone="indigo" />
+          <StatCard label="Gross Profit" value={formatMoney(summary.grossProfitPoisha)} icon={TrendingUp} tone="teal" />
+          <StatCard label="Discounts Given" value={formatMoney(summary.totalDiscountPoisha)} icon={BadgePercent} tone="amber" />
+          <StatCard label="Amount Paid" value={formatMoney(summary.totalPaidPoisha)} icon={CreditCard} tone="emerald" />
           <StatCard
             label="Amount Due"
             value={formatMoney(summary.totalDuePoisha)}
-            tone={summary.totalDuePoisha > 0 ? "danger" : "default"}
+            icon={Receipt}
+            tone={summary.totalDuePoisha > 0 ? "red" : "slate"}
           />
-          <StatCard label="Number of Sales" value={formatNumber(summary.saleCount)} />
+          <StatCard label="Number of Sales" value={formatNumber(summary.saleCount)} icon={Wallet} tone="slate" />
         </div>
       ) : null}
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="card p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-slate-900">Revenue Trend</h2>
-          <div className="flex gap-1.5">
-            {RANGE_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setChartRange(opt.value)}
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  chartRange === opt.value ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+            <BarChart3 size={15} className="text-slate-400" />
+            Revenue Trend
+          </h2>
+          <SegmentedControl options={RANGE_OPTIONS} value={chartRange} onChange={setChartRange} />
         </div>
         {chartLoading ? (
           <LoadingState label="Loading chart…" />

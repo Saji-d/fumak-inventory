@@ -3,9 +3,12 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, PackagePlus } from "lucide-react";
 import { CATEGORIES, type Category } from "@/lib/types";
 import { takaToPoisha } from "@/lib/money";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { CATEGORY_STYLES } from "@/lib/categoryStyles";
+import { useToast } from "@/components/ui/Toast";
 
 export default function NewProductPage() {
   return (
@@ -17,6 +20,7 @@ export default function NewProductPage() {
 
 function NewProductForm() {
   const router = useRouter();
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const prefillBarcode = searchParams.get("barcode") ?? "";
 
@@ -71,11 +75,14 @@ function NewProductForm() {
       const body = await res.json();
       if (!res.ok) {
         setError(body.error ?? "Failed to create product.");
+        toast({ variant: "error", title: "Couldn't create product", description: body.error ?? "Please check the form and try again." });
         return;
       }
+      toast({ variant: "success", title: "Product created", description: `"${name.trim()}" was added to the catalog.` });
       router.push(`/products/${body.id}`);
     } catch {
       setError("Network error. Please try again.");
+      toast({ variant: "error", title: "Network error", description: "Please try again." });
     } finally {
       setSubmitting(false);
     }
@@ -84,21 +91,24 @@ function NewProductForm() {
   return (
     <div className="mx-auto max-w-xl">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-900">New Product</h2>
-        <Link href="/products" className="text-xs font-medium text-slate-500 hover:text-slate-900">
-          ← Back to products
+        <div className="flex items-center gap-2.5">
+          <span className="inline-flex items-center justify-center rounded-lg bg-indigo-50 p-2 text-indigo-600">
+            <PackagePlus size={17} strokeWidth={2.25} />
+          </span>
+          <h2 className="text-sm font-semibold text-slate-900">New Product</h2>
+        </div>
+        <Link href="/products" className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors duration-150 hover:text-slate-900">
+          <ArrowLeft size={13} />
+          Back to products
         </Link>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
-      >
+      <form onSubmit={handleSubmit} className="card flex flex-col gap-4 p-5">
         <Field label="Barcode" required>
           <input
             value={barcodeValue}
             onChange={(e) => setBarcodeValue(e.target.value)}
-            className="input"
+            className="input font-mono"
             placeholder="e.g. 8901030895567"
           />
         </Field>
@@ -108,13 +118,24 @@ function NewProductForm() {
         </Field>
 
         <Field label="Category" required>
-          <select value={category} onChange={(e) => setCategory(e.target.value as Category)} className="input">
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+          <div className="flex flex-wrap gap-1.5">
+            {CATEGORIES.map((c) => {
+              const style = CATEGORY_STYLES[c];
+              const Icon = style.icon;
+              const active = category === c;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCategory(c)}
+                  className={`pill ${active ? `${style.solid} text-white` : `${style.bg} ${style.text} hover:brightness-95`}`}
+                >
+                  <Icon size={12} strokeWidth={2.5} />
+                  {c}
+                </button>
+              );
+            })}
+          </div>
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
@@ -163,21 +184,14 @@ function NewProductForm() {
         </Field>
 
         {error ? (
-          <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
         ) : null}
 
         <div className="flex justify-end gap-2 pt-2">
-          <Link
-            href="/products"
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          <Link href="/products" className="btn-secondary">
             Cancel
           </Link>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-          >
+          <button type="submit" disabled={submitting} className="btn-primary">
             {submitting ? "Saving…" : "Save Product"}
           </button>
         </div>

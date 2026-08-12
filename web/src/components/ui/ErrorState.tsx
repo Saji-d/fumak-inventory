@@ -1,3 +1,5 @@
+import { AlertTriangle, RotateCcw } from "lucide-react";
+
 export function ErrorState({
   message = "Something went wrong.",
   onRetry,
@@ -6,13 +8,14 @@ export function ErrorState({
   onRetry?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-red-200 bg-red-50 px-6 py-14 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-red-200 bg-red-50/60 px-6 py-14 text-center">
+      <span className="inline-flex items-center justify-center rounded-full bg-red-100 p-3 text-red-600">
+        <AlertTriangle size={20} strokeWidth={2} />
+      </span>
       <p className="text-sm font-medium text-red-700">{message}</p>
       {onRetry ? (
-        <button
-          onClick={onRetry}
-          className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
-        >
+        <button type="button" onClick={onRetry} className="btn-secondary">
+          <RotateCcw size={14} />
           Try again
         </button>
       ) : null}

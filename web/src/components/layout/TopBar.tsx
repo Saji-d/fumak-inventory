@@ -1,43 +1,48 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { Menu } from "lucide-react";
 
-const TITLES: Record<string, string> = {
-  "/": "Dashboard",
-  "/products": "Products",
-  "/inventory": "Inventory",
-  "/sales": "Sales",
-  "/analytics": "Analytics",
-  "/settings": "Settings",
+const PAGE_META: Record<string, { title: string; subtitle: string }> = {
+  "/": { title: "Dashboard", subtitle: "Today's snapshot of your shop" },
+  "/products": { title: "Products", subtitle: "Manage your product catalog" },
+  "/inventory": { title: "Inventory", subtitle: "Track stock levels and movements" },
+  "/sales": { title: "Sales", subtitle: "Scan a barcode or search to start a sale" },
+  "/analytics": { title: "Analytics", subtitle: "Revenue, profit, and sales performance" },
+  "/settings": { title: "Settings", subtitle: "Shop-wide preferences" },
 };
 
-function pageTitle(pathname: string): string {
-  if (TITLES[pathname]) return TITLES[pathname];
+function pageMeta(pathname: string): { title: string; subtitle?: string } {
+  if (PAGE_META[pathname]) return PAGE_META[pathname];
   const segment = "/" + pathname.split("/")[1];
-  if (TITLES[segment]) {
-    if (pathname.includes("/new")) return `${TITLES[segment]} · New`;
-    return TITLES[segment];
+  if (PAGE_META[segment]) {
+    if (pathname.includes("/new")) {
+      return { title: `${PAGE_META[segment].title} · New`, subtitle: "Add a new product to the catalog" };
+    }
+    return { title: PAGE_META[segment].title, subtitle: "Edit product details and stock" };
   }
-  return "FUMAK";
+  return { title: "FUMAK" };
 }
 
 export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
   const pathname = usePathname();
+  const meta = pageMeta(pathname);
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:px-6">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/90 px-4 backdrop-blur-sm md:px-6">
       <button
         onClick={onMenuClick}
         aria-label="Open menu"
-        className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 md:hidden"
+        className="icon-btn md:hidden"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <line x1="3" y1="12" x2="21" y2="12" />
-          <line x1="3" y1="18" x2="21" y2="18" />
-        </svg>
+        <Menu size={20} />
       </button>
-      <h1 className="text-base font-semibold text-slate-900">{pageTitle(pathname)}</h1>
+      <div className="min-w-0">
+        <h1 className="truncate text-base font-semibold text-slate-900">{meta.title}</h1>
+        {meta.subtitle ? (
+          <p className="truncate text-xs text-slate-500">{meta.subtitle}</p>
+        ) : null}
+      </div>
     </header>
   );
 }

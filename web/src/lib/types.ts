@@ -116,6 +116,7 @@ export interface DashboardPayload {
   totalAmountDuePoisha: number;
   recentSales: SaleDTO[];
   chart: { label: string; revenuePoisha: number }[];
+  categoryBreakdown: { category: Category; count: number }[];
   currencySymbol: string;
 }
 
