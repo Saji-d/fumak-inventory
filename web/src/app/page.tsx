@@ -61,18 +61,32 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
-        <StatCard label="Products" value={formatNumber(data.totalProducts)} icon={Package} tone="indigo" />
-        <StatCard label="Total Stock" value={formatNumber(data.totalStock)} icon={Boxes} tone="blue" />
-        <StatCard
-          label="Low Stock"
-          value={formatNumber(data.lowStockCount)}
-          icon={AlertTriangle}
-          tone={data.lowStockCount > 0 ? "amber" : "slate"}
-        />
-        <StatCard label="Today's Sales" value={formatNumber(data.todaySalesCount)} icon={ShoppingCart} tone="emerald" />
-        <StatCard label="Today's Revenue" value={formatMoney(data.todayRevenuePoisha, currency)} icon={CircleDollarSign} tone="violet" />
-        <StatCard label="Today's Gross Profit" value={formatMoney(data.todayGrossProfitPoisha, currency)} icon={TrendingUp} tone="teal" />
-        <StatCard label="Today's Items Sold" value={formatNumber(data.todayItemsSold)} icon={PackageCheck} tone="blue" />
+        <Link href="/products" className="block">
+          <StatCard label="Products" value={formatNumber(data.totalProducts)} icon={Package} tone="indigo" />
+        </Link>
+        <Link href="/inventory" className="block">
+          <StatCard label="Total Stock" value={formatNumber(data.totalStock)} icon={Boxes} tone="blue" />
+        </Link>
+        <Link href="/inventory?filter=low-stock" className="block">
+          <StatCard
+            label="Low Stock"
+            value={formatNumber(data.lowStockCount)}
+            icon={AlertTriangle}
+            tone={data.lowStockCount > 0 ? "amber" : "slate"}
+          />
+        </Link>
+        <Link href="/sales/history?date=today" className="block">
+          <StatCard label="Today's Sales" value={formatNumber(data.todaySalesCount)} icon={ShoppingCart} tone="emerald" />
+        </Link>
+        <Link href="/analytics?period=today&metric=revenue" className="block">
+          <StatCard label="Today's Revenue" value={formatMoney(data.todayRevenuePoisha, currency)} icon={CircleDollarSign} tone="violet" />
+        </Link>
+        <Link href="/analytics?period=today&metric=profit" className="block">
+          <StatCard label="Today's Gross Profit" value={formatMoney(data.todayGrossProfitPoisha, currency)} icon={TrendingUp} tone="teal" />
+        </Link>
+        <Link href="/sales/history?date=today&view=items" className="block">
+          <StatCard label="Today's Items Sold" value={formatNumber(data.todayItemsSold)} icon={PackageCheck} tone="blue" />
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

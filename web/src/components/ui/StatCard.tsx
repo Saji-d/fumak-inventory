@@ -26,17 +26,24 @@ export function StatCard({
   hint,
   icon: Icon,
   tone = "slate",
+  highlighted = false,
 }: {
   label: string;
   value: ReactNode;
   hint?: ReactNode;
   icon?: LucideIcon;
   tone?: StatTone;
+  /** Draws a ring around the card — used to point at the one KPI a page was deep-linked to focus on. */
+  highlighted?: boolean;
 }) {
   const styles = TONE_STYLES[tone];
 
   return (
-    <div className="card relative overflow-hidden p-4 transition-shadow duration-150 hover:shadow-md">
+    <div
+      className={`card relative overflow-hidden p-4 transition-shadow duration-150 hover:shadow-md ${
+        highlighted ? "ring-2 ring-slate-900/70 ring-offset-2" : ""
+      }`}
+    >
       <span className={`absolute inset-x-0 top-0 h-1 ${styles.accent}`} aria-hidden="true" />
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>

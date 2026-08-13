@@ -26,6 +26,19 @@ export function getDhakaToday(): { year: number; month: number; day: number } {
   };
 }
 
+/**
+ * Today's date in Dhaka as a "YYYY-MM-DD" string — the same shape the
+ * sales-history API's `date` param expects. Safe to call from the browser
+ * (pure Date math, no server-only APIs) — this is the one place that
+ * resolves a `?date=today` link into a real date, so every caller (Sales
+ * History, Analytics) agrees on what "today" means without each
+ * reimplementing the Dhaka-offset math.
+ */
+export function getDhakaTodayIso(): string {
+  const t = getDhakaToday();
+  return `${t.year}-${String(t.month).padStart(2, "0")}-${String(t.day).padStart(2, "0")}`;
+}
+
 /** [start of month, start of next month) in Dhaka local time. */
 export function dhakaMonthRange(year: number, month1to12: number): DateRange {
   const start = dhakaMidnightUtc(year, month1to12, 1);

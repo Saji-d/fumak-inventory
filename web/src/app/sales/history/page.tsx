@@ -1,39 +1,53 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Calendar, ChevronLeft, ChevronRight, Receipt } from "lucide-react";
 import { useFetch } from "@/lib/useFetch";
-import type { AppSettingsDTO, SaleDTO, SalesHistoryPayload } from "@/lib/types";
+import type { AppSettingsDTO, SaleDTO, SaleItemDTO, SalesHistoryPayload } from "@/lib/types";
 import { formatMoney, formatNumber } from "@/lib/money";
 import { formatInvoiceNo } from "@/lib/pos";
-import { PaymentBadge } from "@/components/ui/PaymentBadge";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ProductImage } from "@/components/ui/ProductImage";
+import { SaleRow } from "@/components/pos/SaleRow";
+import { getDhakaToday, getDhakaTodayIso } from "@/lib/dhakaTime";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
 
-const DHAKA_OFFSET_MS = 6 * 60 * 60 * 1000;
-
-/** Client-side guess at "today" in Dhaka, just to pre-select the pickers before the first fetch resolves. */
-function dhakaTodayParts(): { year: number; month: number } {
-  const dhaka = new Date(Date.now() + DHAKA_OFFSET_MS);
-  return { year: dhaka.getUTCFullYear(), month: dhaka.getUTCMonth() + 1 };
-}
+type ViewMode = "sales" | "items";
 
 export default function SalesHistoryPage() {
-  const { data: settings } = useFetch<AppSettingsDTO>("/api/settings");
-  const currencySymbol = settings?.currencySymbol ?? "৳";
+  return (
+    <Suspense fallback={<LoadingState label="Loading sales history…" />}>
+      <SalesHistoryPageContent />
+    </Suspense>
+  );
+}
 
-  const initial = dhakaTodayParts();
+function SalesHistoryPageContent() {
+  const searchParams = useSearchParams();
+
+  // ?date=today resolves to the actual current Dhaka date once, on first
+  // render; ?date=YYYY-MM-DD is used as-is. Both just seed the same dayFilter
+  // state the manual date picker already drives — nothing downstream needs
+  // to know whether the filter came from a link or a click.
+  const initialDateParam = searchParams.get("date");
+  const initialDayFilter =
+    initialDateParam === "today" ? getDhakaTodayIso() : initialDateParam && /^\d{4}-\d{2}-\d{2}$/.test(initialDateParam) ? initialDateParam : null;
+  const initialView: ViewMode = searchParams.get("view") === "items" ? "items" : "sales";
+
+  const initial = getDhakaToday();
   const [year, setYear] = useState(initial.year);
   const [month, setMonth] = useState(initial.month);
-  const [dayFilter, setDayFilter] = useState<string | null>(null);
+  const [dayFilter, setDayFilter] = useState<string | null>(initialDayFilter);
   const [page, setPage] = useState(1);
+  const [view, setView] = useState<ViewMode>(initialView);
 
   const url = useMemo(() => {
     const params = new URLSearchParams();
@@ -48,6 +62,8 @@ export default function SalesHistoryPage() {
   }, [year, month, dayFilter, page]);
 
   const { data, loading, error, refetch } = useFetch<SalesHistoryPayload>(url);
+  const { data: settings } = useFetch<AppSettingsDTO>("/api/settings");
+  const currencySymbol = settings?.currencySymbol ?? "৳";
 
   function goToMonth(delta: number) {
     setDayFilter(null);
@@ -80,7 +96,7 @@ export default function SalesHistoryPage() {
   }
 
   function resetToCurrentMonth() {
-    const t = dhakaTodayParts();
+    const t = getDhakaToday();
     setYear(t.year);
     setMonth(t.month);
     setDayFilter(null);
@@ -94,6 +110,11 @@ export default function SalesHistoryPage() {
 
   const pageSize = data?.pageSize ?? 30;
   const totalPages = data ? Math.max(Math.ceil(data.total / pageSize), 1) : 1;
+
+  const items = useMemo(() => {
+    if (!data) return [];
+    return data.sales.flatMap((sale) => sale.items.map((item) => ({ item, sale })));
+  }, [data]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -136,14 +157,37 @@ export default function SalesHistoryPage() {
           </button>
         </div>
 
-        <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-slate-100 pt-3">
-          <h2 className="text-base font-semibold text-slate-900">{heading}</h2>
-          {data ? (
-            <p className="text-xs text-slate-500">
-              {formatNumber(data.summary.saleCount)} sale{data.summary.saleCount === 1 ? "" : "s"} ·{" "}
-              {formatMoney(data.summary.totalRevenuePoisha, currencySymbol)}
-            </p>
-          ) : null}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">{heading}</h2>
+            {data ? (
+              <p className="text-xs text-slate-500">
+                {formatNumber(data.summary.saleCount)} sale{data.summary.saleCount === 1 ? "" : "s"} ·{" "}
+                {formatMoney(data.summary.totalRevenuePoisha, currencySymbol)}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="inline-flex gap-1 rounded-lg bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => setView("sales")}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors duration-150 ${
+                view === "sales" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              By Sale
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("items")}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors duration-150 ${
+                view === "items" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              By Item
+            </button>
+          </div>
         </div>
       </div>
 
@@ -156,9 +200,11 @@ export default function SalesHistoryPage() {
       ) : (
         <>
           <ul className="flex flex-col gap-2.5">
-            {data.sales.map((sale) => (
-              <SaleRow key={sale.id} sale={sale} currencySymbol={currencySymbol} />
-            ))}
+            {view === "sales"
+              ? data.sales.map((sale) => <SaleRow key={sale.id} sale={sale} currencySymbol={currencySymbol} />)
+              : items.map(({ item, sale }) => (
+                  <SaleItemRow key={item.id} item={item} sale={sale} currencySymbol={currencySymbol} />
+                ))}
           </ul>
 
           {totalPages > 1 ? (
@@ -180,26 +226,52 @@ export default function SalesHistoryPage() {
   );
 }
 
-function SaleRow({ sale, currencySymbol }: { sale: SaleDTO; currencySymbol: string }) {
-  const itemCount = sale.items.reduce((sum, i) => sum + i.quantity, 0);
+/**
+ * One sold line-item — the same underlying data as SaleRow, just flattened
+ * to product granularity. Revenue/profit are plain arithmetic on the
+ * historical per-item fields already stored on the sale (sellingPriceEach,
+ * buyingCostEach, discount) — the same formula the dashboard's gross-profit
+ * KPI uses in aggregate, not a separate calculation.
+ */
+function SaleItemRow({ item, sale, currencySymbol }: { item: SaleItemDTO; sale: SaleDTO; currencySymbol: string }) {
+  const revenue = item.sellingPriceEachPoisha * item.quantity - item.discountPoisha;
+  const cost = item.buyingCostEachPoisha * item.quantity;
+  const profit = revenue - cost;
+
   return (
     <li>
       <Link
         href={`/sales/${sale.id}`}
-        className="card flex items-center justify-between gap-3 p-4 transition-shadow duration-150 hover:shadow-md"
+        className="card flex items-center gap-3 p-3 transition-shadow duration-150 hover:shadow-md"
       >
-        <div className="min-w-0">
-          <p className="font-mono text-sm font-semibold text-slate-900">{formatInvoiceNo(sale)}</p>
-          <p className="mt-0.5 text-xs text-slate-500">
-            {new Date(sale.timestamp).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })} · {itemCount} item
-            {itemCount === 1 ? "" : "s"}
+        <ProductImage
+          src={item.product?.imageUrl}
+          alt={item.product?.name ?? "Product"}
+          className="h-12 w-12 shrink-0 rounded-lg border border-slate-200"
+          iconSize={16}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-slate-900">{item.product?.name ?? `Product #${item.productId}`}</p>
+          <p className="text-xs text-slate-500">
+            {formatInvoiceNo(sale)} · {new Date(sale.timestamp).toLocaleTimeString("en-US", { timeStyle: "short" })}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
-          <PaymentBadge type={sale.paymentType} />
-          <p className="w-24 text-right font-mono text-sm font-semibold text-slate-900">{formatMoney(sale.totalAmount, currencySymbol)}</p>
-          <ArrowRight size={15} className="shrink-0 text-slate-300" />
+        <div className="hidden shrink-0 text-right text-xs text-slate-500 sm:block">
+          <p>
+            Qty <span className="font-medium text-slate-900">{item.quantity}</span>
+          </p>
+          <p>
+            Unit <span className="font-mono text-slate-900">{formatMoney(item.sellingPriceEachPoisha, currencySymbol)}</span>
+          </p>
         </div>
+        <div className="shrink-0 text-right">
+          <p className="font-mono text-sm font-semibold text-slate-900">{formatMoney(revenue, currencySymbol)}</p>
+          <p className={`font-mono text-xs ${profit >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            {profit >= 0 ? "+" : ""}
+            {formatMoney(profit, currencySymbol)} profit
+          </p>
+        </div>
+        <ArrowRight size={15} className="shrink-0 text-slate-300" />
       </Link>
     </li>
   );

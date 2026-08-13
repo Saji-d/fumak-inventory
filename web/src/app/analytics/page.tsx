@@ -1,7 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
+  ArrowRight,
   BadgePercent,
   BarChart3,
   Coins,
@@ -13,13 +16,16 @@ import {
   Wallet,
 } from "lucide-react";
 import { useFetch } from "@/lib/useFetch";
-import type { AnalyticsPeriod, AnalyticsSummary } from "@/lib/types";
+import type { AnalyticsPeriod, AnalyticsSummary, AppSettingsDTO, SalesHistoryPayload } from "@/lib/types";
 import { formatMoney, formatNumber } from "@/lib/money";
 import type { ChartRange } from "@/lib/analytics";
+import { getDhakaTodayIso } from "@/lib/dhakaTime";
 import { StatCard } from "@/components/ui/StatCard";
 import { LoadingState, SkeletonStatGrid } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { RevenueChart, type RevenueChartPoint } from "@/components/charts/RevenueChart";
+import { SaleRow } from "@/components/pos/SaleRow";
 
 const PERIOD_OPTIONS: { value: AnalyticsPeriod; label: string }[] = [
   { value: "today", label: "Today" },
@@ -35,6 +41,8 @@ const RANGE_OPTIONS: { value: ChartRange; label: string }[] = [
   { value: "6m", label: "6 Months" },
   { value: "1y", label: "1 Year" },
 ];
+
+const VALID_PERIODS = new Set(PERIOD_OPTIONS.map((o) => o.value));
 
 interface SummaryResponse extends AnalyticsSummary {
   start: string;
@@ -69,7 +77,21 @@ function SegmentedControl<T extends string>({
 }
 
 export default function AnalyticsPage() {
-  const [period, setPeriod] = useState<AnalyticsPeriod>("current_month");
+  return (
+    <Suspense fallback={<LoadingState label="Loading analytics…" />}>
+      <AnalyticsPageContent />
+    </Suspense>
+  );
+}
+
+function AnalyticsPageContent() {
+  const searchParams = useSearchParams();
+  const requestedPeriod = searchParams.get("period");
+  const initialPeriod: AnalyticsPeriod =
+    requestedPeriod && VALID_PERIODS.has(requestedPeriod as AnalyticsPeriod) ? (requestedPeriod as AnalyticsPeriod) : "current_month";
+  const metric = searchParams.get("metric"); // "revenue" | "profit" | null — just a visual focus, not a filter
+
+  const [period, setPeriod] = useState<AnalyticsPeriod>(initialPeriod);
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [chartRange, setChartRange] = useState<ChartRange>("3m");
@@ -89,6 +111,15 @@ export default function AnalyticsPage() {
 
   const { data: chart, loading: chartLoading, error: chartError, refetch: refetchChart } =
     useFetch<RevenueChartPoint[]>(`/api/analytics/chart?range=${chartRange}`);
+
+  // Reuses the exact same completed-sales endpoint the Sales History page is
+  // built on — no separate transaction-fetching path — just to show which
+  // sales make up the "Today" summary above, without duplicating any totals.
+  const { data: settings } = useFetch<AppSettingsDTO>("/api/settings");
+  const currencySymbol = settings?.currencySymbol ?? "৳";
+  const { data: todaySales } = useFetch<SalesHistoryPayload>(
+    period === "today" ? `/api/sales/history?date=${getDhakaTodayIso()}&pageSize=10` : null
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -118,10 +149,22 @@ export default function AnalyticsPage() {
         <ErrorState message={summaryError} onRetry={refetchSummary} />
       ) : summary ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          <StatCard label="Total Revenue" value={formatMoney(summary.totalRevenuePoisha)} icon={Coins} tone="violet" />
+          <StatCard
+            label="Total Revenue"
+            value={formatMoney(summary.totalRevenuePoisha)}
+            icon={Coins}
+            tone="violet"
+            highlighted={metric === "revenue"}
+          />
           <StatCard label="Items Sold" value={formatNumber(summary.totalItemsSold)} icon={Package} tone="blue" />
           <StatCard label="Buying Cost" value={formatMoney(summary.totalBuyingCostPoisha)} icon={ShoppingBag} tone="indigo" />
-          <StatCard label="Gross Profit" value={formatMoney(summary.grossProfitPoisha)} icon={TrendingUp} tone="teal" />
+          <StatCard
+            label="Gross Profit"
+            value={formatMoney(summary.grossProfitPoisha)}
+            icon={TrendingUp}
+            tone="teal"
+            highlighted={metric === "profit"}
+          />
           <StatCard label="Discounts Given" value={formatMoney(summary.totalDiscountPoisha)} icon={BadgePercent} tone="amber" />
           <StatCard label="Amount Paid" value={formatMoney(summary.totalPaidPoisha)} icon={CreditCard} tone="emerald" />
           <StatCard
@@ -131,6 +174,35 @@ export default function AnalyticsPage() {
             tone={summary.totalDuePoisha > 0 ? "red" : "slate"}
           />
           <StatCard label="Number of Sales" value={formatNumber(summary.saleCount)} icon={Wallet} tone="slate" />
+        </div>
+      ) : null}
+
+      {period === "today" ? (
+        <div className="card">
+          <div className="card-header">
+            <h2 className="text-sm font-semibold text-slate-900">Today&apos;s Transactions</h2>
+            <Link
+              href="/sales/history?date=today"
+              className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors duration-150 hover:text-slate-900"
+            >
+              Open in Sales History <ArrowRight size={12} />
+            </Link>
+          </div>
+          {!todaySales ? (
+            <div className="p-4">
+              <LoadingState label="Loading today's sales…" />
+            </div>
+          ) : todaySales.sales.length === 0 ? (
+            <div className="p-4">
+              <EmptyState title="No sales yet today" description="Completed sales will show up here." />
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-2 p-4 pt-3">
+              {todaySales.sales.map((sale) => (
+                <SaleRow key={sale.id} sale={sale} currencySymbol={currencySymbol} />
+              ))}
+            </ul>
+          )}
         </div>
       ) : null}
 
