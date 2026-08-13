@@ -8,6 +8,7 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   "/products": { title: "Products", subtitle: "Manage your product catalog" },
   "/inventory": { title: "Inventory", subtitle: "Track stock levels and movements" },
   "/sales": { title: "Sales", subtitle: "Scan items, build a cart, and check out" },
+  "/sales/history": { title: "Sales History", subtitle: "Browse completed sales by day or month" },
   "/analytics": { title: "Analytics", subtitle: "Revenue, profit, and sales performance" },
   "/settings": { title: "Settings", subtitle: "Shop-wide preferences" },
 };

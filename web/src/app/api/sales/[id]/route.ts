@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { serializeSale } from "@/lib/serializers";
 
 function parseId(idParam: string): number | null {
   const id = Number(idParam);
@@ -23,5 +24,5 @@ export async function GET(
   });
   if (!sale) return NextResponse.json({ error: "Sale not found" }, { status: 404 });
 
-  return NextResponse.json(sale);
+  return NextResponse.json(serializeSale(sale));
 }

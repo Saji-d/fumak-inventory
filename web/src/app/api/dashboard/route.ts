@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getPeriodRange, computeAnalyticsSummary, buildChartBuckets, fillBucketRevenue } from "@/lib/analytics";
 import { isCategory } from "@/lib/types";
+import { serializeSale } from "@/lib/serializers";
 
 // GET /api/dashboard — aggregated payload for the Dashboard page.
 // Reuses the same analytics-summary and chart-bucketing helpers as the
@@ -15,7 +16,7 @@ export async function GET() {
       _sum: { currentStock: true },
     }),
     prisma.sale.findMany({
-      include: { items: { include: { product: { select: { id: true, name: true, barcodeValue: true } } } } },
+      include: { items: { include: { product: { select: { id: true, name: true, barcodeValue: true, imageKey: true } } } } },
       orderBy: { timestamp: "desc" },
       take: 8,
     }),
@@ -61,7 +62,7 @@ export async function GET() {
     todayRevenuePoisha: todaySummary.totalRevenuePoisha,
     todayGrossProfitPoisha: todaySummary.grossProfitPoisha,
     totalAmountDuePoisha: dueAgg._sum.amountDue ?? 0,
-    recentSales,
+    recentSales: recentSales.map(serializeSale),
     chart: filledChart.map((b) => ({ label: b.label, revenuePoisha: b.revenuePoisha })),
     categoryBreakdown,
     currencySymbol: settings.currencySymbol,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isCategory } from "@/lib/types";
+import { serializeProduct } from "@/lib/serializers";
 
 function parseId(idParam: string): number | null {
   const id = Number(idParam);
@@ -18,7 +19,7 @@ export async function GET(
   const product = await prisma.product.findUnique({ where: { id } });
   if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
-  return NextResponse.json(product);
+  return NextResponse.json(serializeProduct(product));
 }
 
 // PATCH — edit product details. Stock is intentionally NOT editable here;
@@ -92,7 +93,7 @@ export async function PATCH(
   }
 
   const updated = await prisma.product.update({ where: { id }, data });
-  return NextResponse.json(updated);
+  return NextResponse.json(serializeProduct(updated));
 }
 
 // DELETE — "delete" = archive, never a hard delete (sale/inventory history
@@ -109,5 +110,5 @@ export async function DELETE(
   if (!existing) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
   const archived = await prisma.product.update({ where: { id }, data: { archived: true } });
-  return NextResponse.json(archived);
+  return NextResponse.json(serializeProduct(archived));
 }

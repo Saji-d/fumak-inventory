@@ -8,6 +8,7 @@ import type { AppSettingsDTO, SaleDTO } from "@/lib/types";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { SaleReceipt } from "@/components/pos/SaleReceipt";
+import { SaleDetailCard } from "@/components/pos/SaleDetailCard";
 
 export default function SaleReceiptPage() {
   const params = useParams<{ id: string }>();
@@ -27,11 +28,17 @@ export default function SaleReceiptPage() {
   if (!sale) return <ErrorState message="Sale not found." />;
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4">
-      <Link href="/sales" className="no-print inline-flex w-fit items-center gap-1 text-xs font-medium text-slate-500 transition-colors duration-150 hover:text-slate-900">
-        <ArrowLeft size={13} />
-        Back to POS
-      </Link>
+    <div className="mx-auto flex max-w-3xl flex-col gap-4">
+      <div className="no-print flex items-center justify-between gap-3">
+        <Link href="/sales" className="inline-flex w-fit items-center gap-1 text-xs font-medium text-slate-500 transition-colors duration-150 hover:text-slate-900">
+          <ArrowLeft size={13} />
+          Back to POS
+        </Link>
+        <Link href="/sales/history" className="inline-flex w-fit items-center gap-1 text-xs font-medium text-slate-500 transition-colors duration-150 hover:text-slate-900">
+          Sales History
+        </Link>
+      </div>
+      <SaleDetailCard sale={sale} currencySymbol={currencySymbol} />
       <SaleReceipt sale={sale} currencySymbol={currencySymbol} showActions hideOpenFullReceiptLink />
     </div>
   );

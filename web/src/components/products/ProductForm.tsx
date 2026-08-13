@@ -5,6 +5,8 @@ import { CATEGORIES, type Category, type ProductDTO } from "@/lib/types";
 import { takaToPoisha } from "@/lib/money";
 import { CATEGORY_STYLES } from "@/lib/categoryStyles";
 import { useToast } from "@/components/ui/Toast";
+import { ProductImageField } from "@/components/products/ProductImageField";
+import { uploadProductImage } from "@/lib/uploadProductImage";
 
 /**
  * The product-registration form body, shared by the standalone
@@ -37,6 +39,7 @@ export function ProductForm({
   const [buyingPrice, setBuyingPrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
   const [currentStock, setCurrentStock] = useState(defaultStock);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,7 +87,23 @@ export function ProductForm({
         return;
       }
       toast({ variant: "success", title: "Product created", description: `"${name.trim()}" was added to the catalog.` });
-      onCreated(body as ProductDTO);
+
+      let created = body as ProductDTO;
+      if (imageFile) {
+        try {
+          created = await uploadProductImage(created.id, imageFile);
+        } catch (err) {
+          // The product itself was created successfully — a failed image
+          // upload shouldn't block that. It just has no image yet; one can
+          // be added later from the product page.
+          toast({
+            variant: "error",
+            title: "Product created, but the image failed to upload",
+            description: err instanceof Error ? err.message : "You can add a photo later from the product page.",
+          });
+        }
+      }
+      onCreated(created);
     } catch {
       setError("Network error. Please try again.");
       toast({ variant: "error", title: "Network error", description: "Please try again." });
@@ -109,6 +128,10 @@ export function ProductForm({
 
       <Field label="Name" required>
         <input value={name} onChange={(e) => setName(e.target.value)} className="input" placeholder="e.g. T-Shirt" autoFocus={dense} />
+      </Field>
+
+      <Field label="Photo">
+        <ProductImageField onFileSelected={setImageFile} />
       </Field>
 
       <Field label="Category" required>

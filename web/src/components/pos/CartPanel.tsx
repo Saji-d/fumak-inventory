@@ -6,6 +6,7 @@ import { formatMoney, poishaToTaka, takaToPoisha } from "@/lib/money";
 import { CATEGORY_STYLES } from "@/lib/categoryStyles";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ProductImage } from "@/components/ui/ProductImage";
 import { lineTotalPoisha, type CartAction, type CartLine } from "@/lib/pos";
 
 /**
@@ -90,6 +91,7 @@ function CartRow({
     <li className="flex flex-col gap-2.5 px-4 py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-2">
+          <ProductImage src={product.imageUrl} alt={product.name} className="h-9 w-9 rounded-md border border-slate-200" iconSize={14} />
           <span className={`mt-0.5 inline-flex shrink-0 items-center justify-center rounded-md p-1 ${style.chip}`}>
             <Icon size={12} strokeWidth={2.5} />
           </span>

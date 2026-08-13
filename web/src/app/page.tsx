@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import {
   AlertTriangle,
@@ -25,6 +26,7 @@ import { Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } fro
 import { PaymentBadge } from "@/components/ui/PaymentBadge";
 import { CATEGORY_STYLES } from "@/lib/categoryStyles";
 import { formatMoney, formatNumber } from "@/lib/money";
+import { formatInvoiceNo } from "@/lib/pos";
 
 const QUICK_ACTIONS = [
   { href: "/products/new", label: "Add Product", description: "Register a new item", icon: Plus, tone: "indigo" as const },
@@ -39,6 +41,7 @@ const QUICK_ACTION_TONE_CLASSES: Record<string, string> = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { data, loading, error, refetch } = useFetch<DashboardPayload>("/api/dashboard");
 
   if (loading) {
@@ -174,8 +177,8 @@ export default function DashboardPage() {
       <div className="card">
         <div className="card-header">
           <h2 className="text-sm font-semibold text-slate-900">Recent Sales</h2>
-          <Link href="/sales" className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors duration-150 hover:text-slate-900">
-            Go to sales <ArrowRight size={12} />
+          <Link href="/sales/history" className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors duration-150 hover:text-slate-900">
+            View all sales <ArrowRight size={12} />
           </Link>
         </div>
         {data.recentSales.length === 0 ? (
@@ -190,6 +193,7 @@ export default function DashboardPage() {
           <Table>
             <TableHead>
               <tr>
+                <TableHeaderCell>Sale</TableHeaderCell>
                 <TableHeaderCell>Time</TableHeaderCell>
                 <TableHeaderCell>Items</TableHeaderCell>
                 <TableHeaderCell>Payment</TableHeaderCell>
@@ -198,7 +202,8 @@ export default function DashboardPage() {
             </TableHead>
             <TableBody>
               {data.recentSales.map((sale) => (
-                <TableRow key={sale.id}>
+                <TableRow key={sale.id} onClick={() => router.push(`/sales/${sale.id}`)}>
+                  <TableCell className="font-mono text-xs font-medium text-slate-700">{formatInvoiceNo(sale)}</TableCell>
                   <TableCell className="text-slate-500">{new Date(sale.timestamp).toLocaleString()}</TableCell>
                   <TableCell className="max-w-xs truncate">
                     {sale.items.map((i) => `${i.product?.name ?? "Product"} ×${i.quantity}`).join(", ")}

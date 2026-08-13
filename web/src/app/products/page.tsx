@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { CATEGORY_STYLES } from "@/lib/categoryStyles";
 import { useToast } from "@/components/ui/Toast";
+import { ProductImage } from "@/components/ui/ProductImage";
 
 function StockStatus({ stock, threshold }: { stock: number; threshold: number }) {
   if (stock === 0) return <Badge variant="danger">Out of stock</Badge>;
@@ -155,11 +156,16 @@ export default function ProductsPage() {
                 return (
                   <TableRow key={product.id}>
                     <TableCell>
-                      <Link href={`/products/${product.id}`} className="font-medium text-slate-900 hover:underline">
-                        {product.name}
-                      </Link>
-                      <div className="text-xs text-slate-500">
-                        {[product.color, product.variant].filter(Boolean).join(" / ") || "—"}
+                      <div className="flex items-center gap-2.5">
+                        <ProductImage src={product.imageUrl} alt={product.name} className="h-9 w-9 rounded-md border border-slate-200" iconSize={14} />
+                        <div className="min-w-0">
+                          <Link href={`/products/${product.id}`} className="font-medium text-slate-900 hover:underline">
+                            {product.name}
+                          </Link>
+                          <div className="text-xs text-slate-500">
+                            {[product.color, product.variant].filter(Boolean).join(" / ") || "—"}
+                          </div>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>

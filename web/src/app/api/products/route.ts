@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isCategory } from "@/lib/types";
+import { serializeProduct } from "@/lib/serializers";
 
 // GET /api/products?q=&category=&includeArchived=
 export async function GET(request: NextRequest) {
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
     orderBy: { name: "asc" },
   });
 
-  return NextResponse.json(products);
+  return NextResponse.json(products.map(serializeProduct));
 }
 
 // POST /api/products — create a new product
@@ -97,5 +98,5 @@ export async function POST(request: NextRequest) {
     return created;
   });
 
-  return NextResponse.json(product, { status: 201 });
+  return NextResponse.json(serializeProduct(product), { status: 201 });
 }

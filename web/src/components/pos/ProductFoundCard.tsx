@@ -6,6 +6,7 @@ import type { ProductDTO } from "@/lib/types";
 import { formatMoney, formatNumber } from "@/lib/money";
 import { CATEGORY_STYLES } from "@/lib/categoryStyles";
 import { Badge } from "@/components/ui/Badge";
+import { ProductImage } from "@/components/ui/ProductImage";
 import type { CartLine } from "@/lib/pos";
 import { availableToAdd } from "@/lib/pos";
 
@@ -48,7 +49,13 @@ export function ProductFoundCard({
 
       <div className="flex flex-col gap-4 p-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-start gap-3">
+            <ProductImage
+              src={product.imageUrl}
+              alt={product.name}
+              className="h-14 w-14 rounded-lg border border-slate-200"
+            />
+            <div className="min-w-0">
             <p className="text-lg font-semibold text-slate-900">{product.name}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
               <span>{[product.color, product.variant].filter(Boolean).join(" / ") || "—"}</span>
@@ -64,6 +71,7 @@ export function ProductFoundCard({
               ) : null}
             </div>
             <p className="mt-1.5 font-mono text-xs text-slate-400">Barcode: {product.barcodeValue}</p>
+            </div>
           </div>
           <div className="shrink-0 text-right">
             <p className="text-xl font-bold tabular-nums text-slate-900">{formatMoney(product.sellingPricePoisha, currencySymbol)}</p>

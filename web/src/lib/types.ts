@@ -61,6 +61,7 @@ export interface ProductDTO {
   buyingPricePoisha: number;
   sellingPricePoisha: number;
   currentStock: number;
+  imageUrl: string | null;
   archived: boolean;
   createdAt: string;
   updatedAt: string;
@@ -90,7 +91,7 @@ export interface SaleItemDTO {
   // /api/sales and GET /api/sales/[id] include the full product, so the
   // extra fields are optional here rather than requiring two DTO types.
   product?: Pick<ProductDTO, "id" | "name" | "barcodeValue"> &
-    Partial<Pick<ProductDTO, "category" | "color" | "variant">>;
+    Partial<Pick<ProductDTO, "category" | "color" | "variant" | "imageUrl">>;
 }
 
 export interface SaleDTO {
@@ -122,6 +123,24 @@ export interface DashboardPayload {
   chart: { label: string; revenuePoisha: number }[];
   categoryBreakdown: { category: Category; count: number }[];
   currencySymbol: string;
+}
+
+export interface SalesHistorySummary {
+  saleCount: number;
+  totalRevenuePoisha: number;
+  totalPaidPoisha: number;
+  totalDuePoisha: number;
+}
+
+export interface SalesHistoryPayload {
+  sales: SaleDTO[];
+  total: number;
+  page: number;
+  pageSize: number;
+  summary: SalesHistorySummary;
+  range: { start: string; end: string };
+  resolvedYear: number;
+  resolvedMonth: number;
 }
 
 export interface AnalyticsSummary {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { serializeProduct } from "@/lib/serializers";
 
 // GET /api/products/lookup?barcode=... — used by BarcodeInput.
 // Looks up regardless of archived status, so re-scanning an archived
@@ -15,5 +16,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
 
-  return NextResponse.json(product);
+  return NextResponse.json(serializeProduct(product));
 }

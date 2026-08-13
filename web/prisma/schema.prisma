@@ -18,6 +18,7 @@ model Product {
   buyingPricePoisha  Int
   sellingPricePoisha Int
   currentStock       Int
+  imageKey           String? // R2 object key for the product photo; null = no image. Never binary data in Postgres.
   archived           Boolean  @default(false) // "delete" = archive, never hard-delete
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt

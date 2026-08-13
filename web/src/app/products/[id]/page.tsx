@@ -24,6 +24,7 @@ import { Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } fro
 import { CATEGORY_STYLES } from "@/lib/categoryStyles";
 import { useToast } from "@/components/ui/Toast";
 import { ResumeCartBanner } from "@/components/pos/ResumeCartBanner";
+import { ProductImageField } from "@/components/products/ProductImageField";
 
 const TXN_BADGE_VARIANT: Record<InventoryTransactionType, "success" | "danger" | "info" | "neutral"> = {
   ADD: "success",
@@ -210,6 +211,9 @@ function EditForm({ product, onSaved }: { product: ProductDTO; onSaved: (p: Prod
         </Link>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <Field label="Photo">
+          <ProductImageField productId={product.id} imageUrl={product.imageUrl} onChanged={onSaved} />
+        </Field>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Barcode">
             <input value={barcodeValue} onChange={(e) => setBarcodeValue(e.target.value)} className="input font-mono" />

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isPaymentType } from "@/lib/types";
+import { serializeSale } from "@/lib/serializers";
 
 interface SaleItemInput {
   productId: number;
@@ -15,13 +16,13 @@ export async function GET(request: NextRequest) {
 
   const sales = await prisma.sale.findMany({
     include: {
-      items: { include: { product: { select: { id: true, name: true, barcodeValue: true } } } },
+      items: { include: { product: { select: { id: true, name: true, barcodeValue: true, category: true, color: true, variant: true, imageKey: true } } } },
     },
     orderBy: { timestamp: "desc" },
     take: limit,
   });
 
-  return NextResponse.json(sales);
+  return NextResponse.json(sales.map(serializeSale));
 }
 
 // POST /api/sales — atomically insert Sale + SaleItem(s), decrement stock,
@@ -147,7 +148,7 @@ export async function POST(request: NextRequest) {
       return created;
     });
 
-    return NextResponse.json(sale, { status: 201 });
+    return NextResponse.json(serializeSale(sale), { status: 201 });
   } catch (err) {
     if (err instanceof SaleError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

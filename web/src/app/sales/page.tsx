@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useReducer, useRef, useState } from "react";
+import Link from "next/link";
+import { History } from "lucide-react";
 import type { AppSettingsDTO, ProductDTO, SaleDTO } from "@/lib/types";
 import { useFetch } from "@/lib/useFetch";
 import { ScanPanel } from "@/components/pos/ScanPanel";
@@ -75,7 +77,14 @@ export default function SalesPage() {
   if (!hydrated) return null;
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
+    <div className="flex flex-col gap-4">
+      <div className="flex justify-end">
+        <Link href="/sales/history" className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors duration-150 hover:text-slate-900">
+          <History size={13} />
+          Sales History
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
       <div className="min-w-0">
         <ScanPanel
           lines={cart.lines}
@@ -94,6 +103,7 @@ export default function SalesPage() {
             <CheckoutPanel lines={cart.lines} currencySymbol={currencySymbol} onCompleted={handleCompleted} />
           </>
         )}
+      </div>
       </div>
     </div>
   );
