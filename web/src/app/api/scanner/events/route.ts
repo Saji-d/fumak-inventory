@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getEventsSince, isScannerConnected, pushScanEvent, recordHeartbeat } from "@/lib/scannerEvents";
+import { getEventsSince, getServerInstanceId, isScannerConnected, pushScanEvent, recordHeartbeat } from "@/lib/scannerEvents";
 
 // POST /api/scanner/events — the Android scanner posts either a decoded barcode
 // ({ type: "scan", barcode, format? }) or a lightweight keepalive
@@ -27,9 +27,16 @@ export async function POST(request: NextRequest) {
 }
 
 // GET /api/scanner/events?since=<id> — the desktop polls this for any new scan
-// events plus the current scanner connection status.
+// events plus the current scanner connection status. Also reports this server
+// instance's id so the client (useScannerEvents.ts) can tell when its persisted
+// cursor no longer belongs to the currently-running server and reset it, instead
+// of silently filtering out every future event forever.
 export async function GET(request: NextRequest) {
   const sinceParam = new URL(request.url).searchParams.get("since");
   const since = Number(sinceParam) || 0;
-  return NextResponse.json({ events: getEventsSince(since), connected: isScannerConnected() });
+  return NextResponse.json({
+    events: getEventsSince(since),
+    connected: isScannerConnected(),
+    serverInstanceId: getServerInstanceId(),
+  });
 }

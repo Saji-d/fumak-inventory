@@ -39,7 +39,12 @@ export function SaleDetailCard({ sale, currencySymbol }: { sale: SaleDTO; curren
         <SummaryStat label="Total" value={formatMoney(sale.totalAmount, currencySymbol)} strong />
         <SummaryStat label="Amount Paid" value={formatMoney(sale.amountPaid, currencySymbol)} />
         <SummaryStat label="Change" value={formatMoney(sale.changeAmount, currencySymbol)} tone={sale.changeAmount > 0 ? "positive" : undefined} />
-        <SummaryStat label="Amount Due" value={formatMoney(sale.amountDue, currencySymbol)} tone={sale.amountDue > 0 ? "danger" : undefined} />
+        {/* This app has no credit/partial-payment feature, so amountDue is 0 for
+            every sale completed after that check was added — only shown here for
+            older sales that predate it, where it's real historical data. */}
+        {sale.amountDue > 0 ? (
+          <SummaryStat label="Amount Due" value={formatMoney(sale.amountDue, currencySymbol)} tone="danger" />
+        ) : null}
       </div>
 
       <ul className="divide-y divide-slate-100">

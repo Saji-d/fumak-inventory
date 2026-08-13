@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isPaymentType } from "@/lib/types";
 import { serializeSale } from "@/lib/serializers";
+import { formatMoney } from "@/lib/money";
 
 interface SaleItemInput {
   productId: number;
@@ -29,9 +30,18 @@ export async function GET(request: NextRequest) {
 // and log a SALE inventory transaction per item, all in one prisma.$transaction.
 //
 // Sales math (implemented exactly as specified):
-//   total      = sellingPriceEach * quantity - discount   (summed across items)
-//   amountDue  = max(total - amountPaid, 0)
+//   total        = sellingPriceEach * quantity - discount   (summed across items)
+//   amountDue    = max(total - amountPaid, 0)
 //   changeAmount = max(amountPaid - total, 0)
+//
+// This app has no credit/partial-payment feature (no customer/debtor tracking,
+// no way to later collect an outstanding balance) — so a sale is only allowed to
+// complete once amountPaid covers the total. amountDue is therefore expected to
+// always be 0 for every sale created here; it's still computed and stored (rather
+// than hardcoded) so the formula stays self-evidently correct and consistent with
+// how it's read everywhere else. Sales created before this check existed may
+// still have a nonzero amountDue — that's real historical data and must not be
+// recalculated.
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object") {
@@ -115,6 +125,12 @@ export async function POST(request: NextRequest) {
       });
 
       const paid = amountPaid as number;
+      if (paid < totalAmount) {
+        throw new SaleError(
+          `Amount paid (${formatMoney(paid)}) is less than the total (${formatMoney(totalAmount)}) — short by ${formatMoney(totalAmount - paid)}.`,
+          400
+        );
+      }
       const amountDue = Math.max(totalAmount - paid, 0);
       const changeAmount = Math.max(paid - totalAmount, 0);
 

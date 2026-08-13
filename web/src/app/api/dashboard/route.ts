@@ -41,8 +41,6 @@ export async function GET() {
 
   const todaySummary = await computeAnalyticsSummary(getPeriodRange("today"));
 
-  const dueAgg = await prisma.sale.aggregate({ _sum: { amountDue: true } });
-
   const chartPoints = saleItemsForChart.items.map((item) => ({
     timestamp: item.sale.timestamp,
     amountPoisha: item.sellingPriceEachPoisha * item.quantity - item.discountPoisha,
@@ -61,7 +59,7 @@ export async function GET() {
     todaySalesCount: todaySummary.saleCount,
     todayRevenuePoisha: todaySummary.totalRevenuePoisha,
     todayGrossProfitPoisha: todaySummary.grossProfitPoisha,
-    totalAmountDuePoisha: dueAgg._sum.amountDue ?? 0,
+    todayItemsSold: todaySummary.totalItemsSold,
     recentSales: recentSales.map(serializeSale),
     chart: filledChart.map((b) => ({ label: b.label, revenuePoisha: b.revenuePoisha })),
     categoryBreakdown,

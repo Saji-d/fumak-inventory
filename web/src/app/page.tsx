@@ -10,8 +10,8 @@ import {
   Boxes,
   CircleDollarSign,
   Package,
+  PackageCheck,
   Plus,
-  Receipt,
   ShoppingCart,
   TrendingUp,
 } from "lucide-react";
@@ -72,12 +72,7 @@ export default function DashboardPage() {
         <StatCard label="Today's Sales" value={formatNumber(data.todaySalesCount)} icon={ShoppingCart} tone="emerald" />
         <StatCard label="Today's Revenue" value={formatMoney(data.todayRevenuePoisha, currency)} icon={CircleDollarSign} tone="violet" />
         <StatCard label="Today's Gross Profit" value={formatMoney(data.todayGrossProfitPoisha, currency)} icon={TrendingUp} tone="teal" />
-        <StatCard
-          label="Amount Due"
-          value={formatMoney(data.totalAmountDuePoisha, currency)}
-          icon={Receipt}
-          tone={data.totalAmountDuePoisha > 0 ? "red" : "slate"}
-        />
+        <StatCard label="Today's Items Sold" value={formatNumber(data.todayItemsSold)} icon={PackageCheck} tone="blue" />
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

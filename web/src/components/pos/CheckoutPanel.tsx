@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Receipt } from "lucide-react";
+import { Receipt, TriangleAlert } from "lucide-react";
 import { PAYMENT_TYPES, PAYMENT_TYPE_LABELS, type PaymentType, type SaleDTO } from "@/lib/types";
 import { formatMoney, poishaToTaka, takaToPoisha } from "@/lib/money";
 import { useToast } from "@/components/ui/Toast";
@@ -26,11 +26,16 @@ export function CheckoutPanel({
   const { subtotalPoisha, discountPoisha, totalPoisha } = computeCartTotals(lines);
   const paidTaka = Number(amountPaid) || 0;
   const paidPoisha = takaToPoisha(paidTaka);
-  const { amountDuePoisha, changePoisha } = computeSettlement(totalPoisha, paidPoisha);
+  // amountDuePoisha here means "how much more is needed to reach the total" — a
+  // live shortfall while the cashier is typing, not a stored customer debt. This
+  // app has no credit/partial-payment feature, so a shortfall blocks checkout
+  // entirely (see canSubmit/handleCheckout below) rather than being allowed
+  // through as an "amount due" balance.
+  const { amountDuePoisha: shortfallPoisha, changePoisha } = computeSettlement(totalPoisha, paidPoisha);
   const totalTaka = poishaToTaka(totalPoisha);
 
   const hasStockConflict = lines.some((l) => l.quantity > l.product.currentStock);
-  const canSubmit = lines.length > 0 && !hasStockConflict;
+  const canSubmit = lines.length > 0 && !hasStockConflict && shortfallPoisha === 0;
 
   async function handleCheckout(e: React.FormEvent) {
     e.preventDefault();
@@ -47,6 +52,10 @@ export function CheckoutPanel({
     }
     if (Number.isNaN(paidTaka) || paidTaka < 0) {
       setError("Amount paid must be a non-negative number.");
+      return;
+    }
+    if (shortfallPoisha > 0) {
+      setError(`Amount paid is short by ${formatMoney(shortfallPoisha, currencySymbol)}.`);
       return;
     }
 
@@ -125,10 +134,17 @@ export function CheckoutPanel({
           <SummaryStat label="Total" value={formatMoney(totalPoisha, currencySymbol)} />
         </div>
         <div className="grid grid-cols-2 divide-x divide-white/10 border-t border-white/10">
-          <SummaryStat label="Due" value={formatMoney(amountDuePoisha, currencySymbol)} tone={amountDuePoisha > 0 ? "danger" : "default"} />
+          <SummaryStat label="Amount Paid" value={formatMoney(paidPoisha, currencySymbol)} />
           <SummaryStat label="Change" value={formatMoney(changePoisha, currencySymbol)} tone={changePoisha > 0 ? "positive" : "default"} />
         </div>
       </div>
+
+      {shortfallPoisha > 0 && lines.length > 0 ? (
+        <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <TriangleAlert size={14} className="mt-0.5 shrink-0" />
+          {formatMoney(shortfallPoisha, currencySymbol)} more needed to complete this sale.
+        </p>
+      ) : null}
 
       {error ? (
         <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
