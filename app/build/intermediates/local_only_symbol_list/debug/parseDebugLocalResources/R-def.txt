@@ -7,3 +7,4 @@ drawable ic_launcher_foreground
 mipmap ic_launcher
 string app_name
 style Theme.FumakScanner
+xml network_security_config_debug

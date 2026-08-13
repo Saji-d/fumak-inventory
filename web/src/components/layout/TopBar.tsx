@@ -7,15 +7,18 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   "/": { title: "Dashboard", subtitle: "Today's snapshot of your shop" },
   "/products": { title: "Products", subtitle: "Manage your product catalog" },
   "/inventory": { title: "Inventory", subtitle: "Track stock levels and movements" },
-  "/sales": { title: "Sales", subtitle: "Scan a barcode or search to start a sale" },
+  "/sales": { title: "Sales", subtitle: "Scan items, build a cart, and check out" },
   "/analytics": { title: "Analytics", subtitle: "Revenue, profit, and sales performance" },
   "/settings": { title: "Settings", subtitle: "Shop-wide preferences" },
 };
 
 function pageMeta(pathname: string): { title: string; subtitle?: string } {
   if (PAGE_META[pathname]) return PAGE_META[pathname];
+  if (pathname.startsWith("/sales/")) {
+    return { title: "Sale Receipt", subtitle: "Invoice for a completed sale" };
+  }
   const segment = "/" + pathname.split("/")[1];
-  if (PAGE_META[segment]) {
+  if (segment === "/products" && PAGE_META[segment]) {
     if (pathname.includes("/new")) {
       return { title: `${PAGE_META[segment].title} · New`, subtitle: "Add a new product to the catalog" };
     }

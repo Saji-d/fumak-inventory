@@ -86,7 +86,11 @@ export interface SaleItemDTO {
   sellingPriceEachPoisha: number;
   buyingCostEachPoisha: number;
   discountPoisha: number;
-  product?: Pick<ProductDTO, "id" | "name" | "barcodeValue">;
+  // GET /api/sales (collection) only selects id/name/barcodeValue; POST
+  // /api/sales and GET /api/sales/[id] include the full product, so the
+  // extra fields are optional here rather than requiring two DTO types.
+  product?: Pick<ProductDTO, "id" | "name" | "barcodeValue"> &
+    Partial<Pick<ProductDTO, "category" | "color" | "variant">>;
 }
 
 export interface SaleDTO {

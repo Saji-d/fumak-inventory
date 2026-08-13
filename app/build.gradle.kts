@@ -2,7 +2,6 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.devtools.ksp")
 }
 
 android {
@@ -67,18 +66,8 @@ dependencies {
     // Google ML Kit — on-device, bundled model (works fully offline, no first-run download)
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
-    // Room — local SQLite persistence (products, inventory, sales)
-    val roomVersion = "2.6.1"
-    implementation("androidx.room:room-runtime:$roomVersion")
-    implementation("androidx.room:room-ktx:$roomVersion")
-    ksp("androidx.room:room-compiler:$roomVersion")
-
-    // Navigation — Scanner -> Product Detail -> Record Sale -> Analytics
+    // Navigation — Scanner -> Desktop Connection settings
     implementation("androidx.navigation:navigation-compose:2.8.3")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
-}
-
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
 }

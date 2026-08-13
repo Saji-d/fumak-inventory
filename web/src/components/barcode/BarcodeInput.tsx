@@ -1,10 +1,22 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ScanLine, Search, TriangleAlert } from "lucide-react";
 import type { ProductDTO } from "@/lib/types";
+
+// A duplicate scan of the *same* barcode within this window is swallowed —
+// absorbs a scanner's double-trigger/echo without blocking a deliberate
+// re-scan a moment later (e.g. to bump cart quantity).
+const DUPLICATE_SCAN_WINDOW_MS = 500;
+
+export interface BarcodeInputHandle {
+  focus: () => void;
+  /** Feeds an externally-sourced barcode (e.g. from the Android scanner) through the
+   * exact same lookup/dedupe/onFound/onNotFound path a manual scan already takes. */
+  submit: (barcode: string) => void;
+}
 
 /**
  * A single auto-focused <input> that submits on Enter — the universal
@@ -14,31 +26,68 @@ import type { ProductDTO } from "@/lib/types";
  * On submit: GET /api/products/lookup?barcode=<value>.
  *  - Found: calls onFound(product) if provided, otherwise navigates to
  *    /products/[id].
- *  - Not found: shows an inline "Product not found" message with a
- *    "Register Product" link to /products/new?barcode=<value>.
+ *  - Not found: calls onNotFound(barcode) if provided, otherwise shows the
+ *    built-in inline "Product not found" message with a "Register Product"
+ *    link to /products/new?barcode=<value>.
+ *
+ * Guards against duplicate submissions from rapid/double scanner Enter
+ * events: an in-flight lookup blocks a second one, and an identical
+ * barcode resubmitted within DUPLICATE_SCAN_WINDOW_MS is ignored.
+ *
+ * A ref exposes focus() so a parent (e.g. the POS page, after a button
+ * click moves focus away) can return keyboard/scanner focus to the input.
  */
-export function BarcodeInput({
-  onFound,
-  autoFocus = true,
-  placeholder = "Scan or type a barcode, then press Enter",
-  className = "",
-}: {
-  onFound?: (product: ProductDTO) => void;
-  autoFocus?: boolean;
-  placeholder?: string;
-  className?: string;
-}) {
+export const BarcodeInput = forwardRef<
+  BarcodeInputHandle,
+  {
+    onFound?: (product: ProductDTO) => void;
+    onNotFound?: (barcode: string) => void;
+    onEmptyEnter?: () => void;
+    autoFocus?: boolean;
+    placeholder?: string;
+    className?: string;
+  }
+>(function BarcodeInput(
+  {
+    onFound,
+    onNotFound,
+    onEmptyEnter,
+    autoFocus = true,
+    placeholder = "Scan or type a barcode, then press Enter",
+    className = "",
+  },
+  ref
+) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const inFlightRef = useRef(false);
+  const lastSubmitRef = useRef<{ barcode: string; at: number } | null>(null);
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [notFoundBarcode, setNotFoundBarcode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit() {
-    const barcode = value.trim();
+  useImperativeHandle(
+    ref,
+    () => ({
+      focus: () => inputRef.current?.focus(),
+      submit: (barcode: string) => {
+        handleSubmit(barcode);
+      },
+    }),
+    [handleSubmit],
+  );
+
+  async function handleSubmit(overrideBarcode?: string) {
+    const barcode = (overrideBarcode ?? value).trim();
     if (!barcode) return;
 
+    if (inFlightRef.current) return;
+    const last = lastSubmitRef.current;
+    if (last && last.barcode === barcode && Date.now() - last.at < DUPLICATE_SCAN_WINDOW_MS) return;
+    lastSubmitRef.current = { barcode, at: Date.now() };
+
+    inFlightRef.current = true;
     setLoading(true);
     setError(null);
     setNotFoundBarcode(null);
@@ -46,7 +95,12 @@ export function BarcodeInput({
     try {
       const res = await fetch(`/api/products/lookup?barcode=${encodeURIComponent(barcode)}`);
       if (res.status === 404) {
-        setNotFoundBarcode(barcode);
+        setValue("");
+        if (onNotFound) {
+          onNotFound(barcode);
+        } else {
+          setNotFoundBarcode(barcode);
+        }
         return;
       }
       if (!res.ok) {
@@ -63,6 +117,7 @@ export function BarcodeInput({
     } catch {
       setError("Network error while looking up barcode.");
     } finally {
+      inFlightRef.current = false;
       setLoading(false);
       inputRef.current?.focus();
     }
@@ -88,17 +143,20 @@ export function BarcodeInput({
               if (error) setError(null);
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleSubmit();
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              if (!value.trim()) {
+                onEmptyEnter?.();
+                return;
               }
+              handleSubmit();
             }}
             placeholder={placeholder}
             aria-label="Barcode"
             className="input pl-9"
           />
         </div>
-        <button type="button" onClick={handleSubmit} disabled={loading || !value.trim()} className="btn-primary shrink-0">
+        <button type="button" onClick={() => handleSubmit()} disabled={loading || !value.trim()} className="btn-primary shrink-0">
           <Search size={15} />
           {loading ? "Looking up…" : "Lookup"}
         </button>
@@ -126,4 +184,4 @@ export function BarcodeInput({
       ) : null}
     </div>
   );
-}
+});

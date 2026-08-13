@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Debug-only: permits cleartext HTTP so the app can reach the desktop's Next.js dev
+server over the LAN (no TLS cert available for a LAN IP during development). Only
+ever included in debug builds (see app/src/debug/AndroidManifest.xml) — release
+builds have no network security config override and keep Android's secure-by-default
+cleartext-blocked behavior.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

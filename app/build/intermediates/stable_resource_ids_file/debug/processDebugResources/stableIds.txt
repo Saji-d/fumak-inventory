@@ -976,6 +976,7 @@ com.fumak.scanner:attr/actionModeCloseButtonStyle = 0x7f030012
 com.fumak.scanner:attr/paddingEnd = 0x7f0300ce
 com.fumak.scanner:attr/tooltipForegroundColor = 0x7f03012b
 com.fumak.scanner:attr/titleMargins = 0x7f030125
+com.fumak.scanner:xml/network_security_config_debug = 0x7f100000
 com.fumak.scanner:attr/actionModeStyle = 0x7f03001d
 com.fumak.scanner:drawable/common_google_signin_btn_icon_light = 0x7f07005d
 com.fumak.scanner:dimen/abc_edit_text_inset_horizontal_material = 0x7f06002d

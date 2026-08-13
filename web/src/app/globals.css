@@ -56,4 +56,35 @@ body {
   .icon-btn {
     @apply inline-flex items-center justify-center rounded-lg p-1.5 text-slate-500 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/20;
   }
+
+  .no-print {
+    /* Marks POS/receipt chrome (buttons, links) that should vanish from the printed page. */
+  }
+}
+
+/* Printable receipt: hide everything except #receipt-print-root (the
+   sidebar/topbar/buttons stay in the DOM but must not print), and lay the
+   receipt out full-width from the page's top-left regardless of the
+   app shell's fixed sidebar / sticky topbar. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #receipt-print-root,
+  #receipt-print-root * {
+    visibility: visible;
+  }
+  #receipt-print-root {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    background: white;
+    color: black;
+  }
+  .no-print {
+    display: none !important;
+  }
+  @page {
+    margin: 12mm;
+  }
 }

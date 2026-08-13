@@ -14,16 +14,20 @@ import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -50,16 +54,16 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
-import com.fumak.scanner.data.product.ProductRepository
-import com.fumak.scanner.scanner.BarcodeFormat
+import com.fumak.scanner.data.connection.ConnectionProfileStore
 import com.fumak.scanner.scanner.BarcodeScanResult
 import com.fumak.scanner.scanner.BarcodeScannerEngine
 import com.fumak.scanner.scanner.MlKitBarcodeScannerEngine
 import com.fumak.scanner.scanner.ScannerConfig
 import com.fumak.scanner.ui.nav.FumakNavHost
 import com.fumak.scanner.ui.nav.Routes
-import com.fumak.scanner.ui.scanner.ProductLookupState
-import com.fumak.scanner.ui.scanner.ScannerViewModel
+import com.fumak.scanner.ui.scanner.ConnectionStatus
+import com.fumak.scanner.ui.scanner.SendState
+import com.fumak.scanner.ui.scanner.SendViewModel
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -101,12 +105,8 @@ class MainActivity : ComponentActivity() {
                                 ScannerRoute(
                                     scannerEngine = scannerEngine,
                                     cameraExecutor = cameraExecutor,
-                                    productRepository = appContainer.productRepository,
-                                    onViewProduct = { productId -> navController.navigate(Routes.productDetail(productId)) },
-                                    onRegisterProduct = { barcode, format ->
-                                        navController.navigate(Routes.registerProduct(barcode, format))
-                                    },
-                                    onOpenAnalytics = { navController.navigate(Routes.ANALYTICS) },
+                                    profileStore = appContainer.connectionProfileStore,
+                                    onOpenConnections = { navController.navigate(Routes.CONNECTIONS) },
                                 )
                             },
                         )
@@ -126,22 +126,22 @@ class MainActivity : ComponentActivity() {
 }
 
 /**
- * Wraps the existing (unmodified) [ScannerScreen] with product-lookup wiring: every decoded
- * barcode is resolved against the product catalog via [ScannerViewModel], surfacing a
- * tap-to-confirm affordance to view a known product or register an unknown one. Never
- * auto-navigates away from the live camera, so rapid multi-scanning is undisturbed.
+ * Wraps the existing (unmodified) [ScannerScreen] with scanner-to-desktop wiring: every
+ * decoded barcode is forwarded to the active desktop connection via [SendViewModel] —
+ * no product lookup, no local database. Never auto-navigates away from the live
+ * camera, so rapid multi-scanning is undisturbed.
  */
 @Composable
 private fun ScannerRoute(
     scannerEngine: BarcodeScannerEngine,
     cameraExecutor: ExecutorService,
-    productRepository: ProductRepository,
-    onViewProduct: (Long) -> Unit,
-    onRegisterProduct: (String, BarcodeFormat) -> Unit,
-    onOpenAnalytics: () -> Unit,
+    profileStore: ConnectionProfileStore,
+    onOpenConnections: () -> Unit,
 ) {
-    val viewModel: ScannerViewModel = viewModel(factory = ScannerViewModel.factory(productRepository))
-    val lookupState by viewModel.lookupState.collectAsState()
+    val viewModel: SendViewModel = viewModel(factory = SendViewModel.factory(profileStore))
+    val sendState by viewModel.sendState.collectAsState()
+    val connectionStatus by viewModel.connectionStatus.collectAsState()
+    val activeProfile by viewModel.activeProfile.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
         ScannerScreen(
@@ -150,43 +150,87 @@ private fun ScannerRoute(
             onScanResult = viewModel::onBarcodeScanned,
         )
 
-        LookupAffordance(
-            state = lookupState,
-            onViewProduct = onViewProduct,
-            onRegisterProduct = onRegisterProduct,
+        ConnectionStatusChip(
+            status = connectionStatus,
+            profileName = activeProfile?.name,
             modifier = Modifier
-                .align(Alignment.BottomCenter)
+                .align(Alignment.TopStart)
                 .navigationBarsPadding()
-                .padding(bottom = 16.dp),
+                .padding(16.dp),
         )
 
         TextButton(
-            onClick = onOpenAnalytics,
+            onClick = onOpenConnections,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .navigationBarsPadding()
                 .padding(16.dp),
         ) {
-            Text("Analytics", color = Color.White)
+            Text("Desktop", color = Color.White)
+        }
+
+        SendStatusChip(
+            state = sendState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 16.dp),
+        )
+    }
+}
+
+@Composable
+private fun ConnectionStatusChip(
+    status: ConnectionStatus,
+    profileName: String?,
+    modifier: Modifier = Modifier,
+) {
+    val (label, dotColor) = when {
+        profileName == null -> "No desktop selected" to Color(0xFF9E9E9E)
+        status == ConnectionStatus.CONNECTED -> "Connected to $profileName" to Color(0xFF43A047)
+        status == ConnectionStatus.NOT_CONNECTED -> "Not connected" to Color(0xFFE53935)
+        else -> "Connecting…" to Color(0xFF9E9E9E)
+    }
+
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = Color(0xE60E1410)),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .background(color = dotColor, shape = CircleShape),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(label, color = Color.White, fontSize = 13.sp)
         }
     }
 }
 
 @Composable
-private fun LookupAffordance(
-    state: ProductLookupState,
-    onViewProduct: (Long) -> Unit,
-    onRegisterProduct: (String, BarcodeFormat) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    when (state) {
-        is ProductLookupState.Found -> Button(onClick = { onViewProduct(state.product.id) }, modifier = modifier) {
-            Text("View Product: ${state.product.name}")
-        }
-        is ProductLookupState.NotFound -> Button(onClick = { onRegisterProduct(state.barcode, state.format) }, modifier = modifier) {
-            Text("Register New Product")
-        }
-        ProductLookupState.Idle -> Unit
+private fun SendStatusChip(state: SendState, modifier: Modifier = Modifier) {
+    val (text, color) = when (state) {
+        SendState.Idle -> "Ready to scan" to Color(0xFFB0BEC5)
+        SendState.Sending -> "Sending…" to Color(0xFFFFC107)
+        SendState.Sent -> "✓ Sent to FUMAK POS" to Color(0xFF43A047)
+        is SendState.Failed -> "Unable to send: ${state.message}" to Color(0xFFEF5350)
+    }
+
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = Color(0xE60E1410)),
+    ) {
+        Text(
+            text = text,
+            color = color,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+        )
     }
 }
 

@@ -23,6 +23,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from "@/components/ui/Table";
 import { CATEGORY_STYLES } from "@/lib/categoryStyles";
 import { useToast } from "@/components/ui/Toast";
+import { ResumeCartBanner } from "@/components/pos/ResumeCartBanner";
 
 const TXN_BADGE_VARIANT: Record<InventoryTransactionType, "success" | "danger" | "info" | "neutral"> = {
   ADD: "success",
@@ -57,6 +58,7 @@ export default function EditProductPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <ResumeCartBanner />
       <EditForm product={product} onSaved={setProduct} />
       <StockAdjustPanel
         product={product}
