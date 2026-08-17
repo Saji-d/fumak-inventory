@@ -38,10 +38,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fumak.scanner.data.connection.ConnectionProfile
 import com.fumak.scanner.data.connection.ConnectionProfileStore
+import com.fumak.scanner.data.connection.ConnectionType
 
 /**
  * "Desktop Connection" settings: add/edit/delete saved desktop profiles (e.g. "Home",
@@ -171,7 +173,16 @@ private fun ProfileRow(
                         }
                     }
                 }
-                Text(profile.displayAddress, style = MaterialTheme.typography.bodyMedium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        if (profile.connectionType == ConnectionType.PRODUCTION) "PRODUCTION" else "LAN",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(profile.displayAddress, style = MaterialTheme.typography.bodyMedium)
+                }
             }
             TextButton(onClick = onEdit) { Text("Edit") }
             TextButton(onClick = onDelete) { Text("Delete") }
@@ -187,10 +198,26 @@ private fun ProfileEditDialog(
     onSave: (name: String, host: String, port: Int) -> Unit,
 ) {
     var name by remember { mutableStateOf(initial?.name ?: "") }
-    var host by remember { mutableStateOf(initial?.host ?: "") }
-    var port by remember { mutableStateOf((initial?.port ?: 3000).toString()) }
-    val portValue = port.toIntOrNull()
-    val canSave = name.isNotBlank() && host.isNotBlank() && portValue != null && portValue in 1..65535
+    var connectionType by remember { mutableStateOf(initial?.connectionType ?: ConnectionType.LAN) }
+
+    // LAN and Production each keep their own field state so switching the toggle
+    // back and forth never clobbers what was typed on the other side.
+    var lanHost by remember {
+        mutableStateOf(if (initial == null || initial.connectionType == ConnectionType.LAN) initial?.host ?: "" else "")
+    }
+    var lanPort by remember { mutableStateOf((initial?.port ?: 3000).toString()) }
+    var productionUrl by remember {
+        mutableStateOf(
+            if (initial?.connectionType == ConnectionType.PRODUCTION) initial.host
+            else ConnectionProfile.DEFAULT_PRODUCTION_URL,
+        )
+    }
+
+    val lanPortValue = lanPort.toIntOrNull()
+    val canSave = name.isNotBlank() && when (connectionType) {
+        ConnectionType.LAN -> lanHost.isNotBlank() && lanPortValue != null && lanPortValue in 1..65535
+        ConnectionType.PRODUCTION -> productionUrl.isNotBlank()
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -204,28 +231,94 @@ private fun ProfileEditDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = host,
-                    onValueChange = { host = it },
-                    label = { Text("Desktop IP address or URL") },
-                    placeholder = { Text("192.168.1.23 or https://your-app.vercel.app") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = port,
-                    onValueChange = { port = it.filter(Char::isDigit) },
-                    label = { Text("Port") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                Spacer(Modifier.height(12.dp))
+                ConnectionTypeToggle(selected = connectionType, onSelect = { connectionType = it })
+                Spacer(Modifier.height(12.dp))
+
+                when (connectionType) {
+                    ConnectionType.LAN -> {
+                        OutlinedTextField(
+                            value = lanHost,
+                            onValueChange = { lanHost = it },
+                            label = { Text("Desktop IP address") },
+                            placeholder = { Text("192.168.1.23") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = lanPort,
+                            onValueChange = { lanPort = it.filter(Char::isDigit) },
+                            label = { Text("Port") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    ConnectionType.PRODUCTION -> {
+                        OutlinedTextField(
+                            value = productionUrl,
+                            onValueChange = { productionUrl = it },
+                            label = { Text("Production URL") },
+                            placeholder = { Text(ConnectionProfile.DEFAULT_PRODUCTION_URL) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(name.trim(), host.trim(), portValue!!) }, enabled = canSave) { Text("Save") }
+            TextButton(
+                onClick = {
+                    val (host, port) = when (connectionType) {
+                        ConnectionType.LAN -> lanHost.trim() to lanPortValue!!
+                        ConnectionType.PRODUCTION -> {
+                            val trimmed = productionUrl.trim()
+                            val withScheme = if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+                                trimmed
+                            } else {
+                                "https://$trimmed"
+                            }
+                            withScheme to 443
+                        }
+                    }
+                    onSave(name.trim(), host, port)
+                },
+                enabled = canSave,
+            ) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
+}
+
+/** Two-way "LAN" / "Production URL" segmented toggle. */
+@Composable
+private fun ConnectionTypeToggle(
+    selected: ConnectionType,
+    onSelect: (ConnectionType) -> Unit,
+) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        ConnectionType.entries.forEachIndexed { index, type ->
+            val isSelected = type == selected
+            Surface(
+                modifier = Modifier.weight(1f).clickable { onSelect(type) },
+                shape = RoundedCornerShape(8.dp),
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+            ) {
+                Text(
+                    text = if (type == ConnectionType.LAN) "LAN" else "Production URL",
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.onPrimary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                )
+            }
+            if (index == 0) Spacer(Modifier.width(8.dp))
+        }
+    }
 }
