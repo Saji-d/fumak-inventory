@@ -6,15 +6,19 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Archive,
+  Ban,
   History,
+  Minus,
   PackageCheck,
   Pencil,
+  Plus,
+  ShoppingCart,
   SlidersHorizontal,
 } from "lucide-react";
 import { useFetch } from "@/lib/useFetch";
-import type { InventoryTransactionDTO, ProductDTO } from "@/lib/types";
+import type { AppSettingsDTO, InventoryTransactionDTO, ProductDTO } from "@/lib/types";
 import { CATEGORIES, INVENTORY_TXN_TYPE_LABELS, type Category, type InventoryTransactionType } from "@/lib/types";
-import { formatNumber, takaToPoisha, poishaToTaka } from "@/lib/money";
+import { formatMoney, formatNumber, takaToPoisha, poishaToTaka } from "@/lib/money";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -25,6 +29,7 @@ import { CATEGORY_STYLES } from "@/lib/categoryStyles";
 import { useToast } from "@/components/ui/Toast";
 import { ResumeCartBanner } from "@/components/pos/ResumeCartBanner";
 import { ProductImageField } from "@/components/products/ProductImageField";
+import { availableToAdd, cartReducer, loadCartFromSession, saveCartToSession, type CartLine } from "@/lib/pos";
 
 const TXN_BADGE_VARIANT: Record<InventoryTransactionType, "success" | "danger" | "info" | "neutral"> = {
   ADD: "success",
@@ -37,6 +42,9 @@ export default function EditProductPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = Number(params.id);
+
+  const { data: settings } = useFetch<AppSettingsDTO>("/api/settings");
+  const currencySymbol = settings?.currencySymbol ?? "৳";
 
   const {
     data: product,
@@ -53,14 +61,24 @@ export default function EditProductPage() {
     refetch: refetchHistory,
   } = useFetch<InventoryTransactionDTO[]>(Number.isFinite(id) ? `/api/inventory/history?productId=${id}` : null);
 
+  // Bumped after Add to Cart so ResumeCartBanner (which only reads
+  // sessionStorage once on mount) re-reads and reflects the new cart state
+  // immediately, without touching the Sales page's own cart hydration.
+  const [cartVersion, setCartVersion] = useState(0);
+
   if (loading) return <LoadingState label="Loading product…" />;
   if (error) return <ErrorState message={error} onRetry={refetchProduct} />;
   if (!product) return <ErrorState message="Product not found." />;
 
   return (
     <div className="flex flex-col gap-6">
-      <ResumeCartBanner />
+      <ResumeCartBanner key={cartVersion} />
       <EditForm product={product} onSaved={setProduct} />
+      <AddToCartPanel
+        product={product}
+        currencySymbol={currencySymbol}
+        onAdded={() => setCartVersion((v) => v + 1)}
+      />
       <StockAdjustPanel
         product={product}
         onAdjusted={() => {
@@ -277,6 +295,122 @@ function EditForm({ product, onSaved }: { product: ProductDTO; onSaved: (p: Prod
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function AddToCartPanel({
+  product,
+  currencySymbol,
+  onAdded,
+}: {
+  product: ProductDTO;
+  currencySymbol: string;
+  onAdded: () => void;
+}) {
+  const { toast } = useToast();
+  // Read only in an effect (never during render) to avoid a server/client
+  // hydration mismatch — same approach as ResumeCartBanner, which reads the
+  // same sessionStorage-backed cart.
+  const [lines, setLines] = useState<CartLine[] | null>(null);
+  const [qty, setQty] = useState(1);
+
+  useEffect(() => {
+    Promise.resolve().then(() => setLines(loadCartFromSession()));
+  }, []);
+
+  const inStock = product.currentStock > 0;
+  const remaining = availableToAdd(product, lines ?? []);
+  const canAdd = inStock && remaining > 0;
+  // Derived at render time (not synced via effect) so qty never displays
+  // above what's actually addable once `lines` finishes loading.
+  const maxQty = Math.max(remaining, 1);
+  const displayQty = Math.min(qty, maxQty);
+
+  function handleAdd() {
+    if (!canAdd) return;
+    // Reuses the exact same reducer + sessionStorage helpers the Sales page
+    // hydrates its cart from — no second cart implementation.
+    const current = loadCartFromSession();
+    const { lines: nextLines } = cartReducer({ lines: current }, { type: "ADD_OR_INCREMENT", product, qty: displayQty });
+    saveCartToSession(nextLines);
+    setLines(nextLines);
+    const addedQty = displayQty;
+    setQty(1);
+    onAdded();
+    toast({
+      variant: "success",
+      title: "Added to cart",
+      description: `${addedQty} × "${product.name}" added to the sale.`,
+    });
+  }
+
+  return (
+    <div className="card flex flex-col gap-3 border-emerald-200 bg-emerald-50/40 p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-100 p-2.5 text-emerald-700">
+            <ShoppingCart size={20} />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Sell this product</p>
+            <p className="text-xs text-slate-500">
+              {formatMoney(product.sellingPricePoisha, currencySymbol)} each ·{" "}
+              {inStock ? `${formatNumber(product.currentStock)} in stock` : "Out of stock"}
+            </p>
+          </div>
+        </div>
+
+        {!inStock ? (
+          <button
+            type="button"
+            disabled
+            className="inline-flex shrink-0 cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-slate-200 px-6 py-3 text-base font-semibold text-slate-500"
+          >
+            <Ban size={18} />
+            Out of Stock
+          </button>
+        ) : (
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setQty((q) => Math.max(1, q - 1))}
+                disabled={displayQty <= 1}
+                className="icon-btn border border-slate-200"
+                aria-label="Decrease quantity"
+              >
+                <Minus size={14} />
+              </button>
+              <span className="w-8 text-center font-mono text-sm font-semibold text-slate-900">{displayQty}</span>
+              <button
+                type="button"
+                onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
+                disabled={displayQty >= remaining}
+                className="icon-btn border border-slate-200"
+                aria-label="Increase quantity"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={!canAdd}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3 text-base font-semibold text-white shadow-md shadow-emerald-500/20 transition-all duration-150 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-lg hover:shadow-emerald-500/30 active:scale-[0.98] active:from-emerald-700 active:to-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:shadow-none disabled:active:scale-100"
+            >
+              <ShoppingCart size={18} />
+              Add to Cart
+            </button>
+          </div>
+        )}
+      </div>
+
+      {inStock && !canAdd ? (
+        <p className="text-xs text-amber-700">
+          All {product.currentStock} in stock {product.currentStock === 1 ? "is" : "are"} already in the cart.
+        </p>
+      ) : null}
     </div>
   );
 }
