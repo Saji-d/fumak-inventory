@@ -171,7 +171,7 @@ private fun ProfileRow(
                         }
                     }
                 }
-                Text("${profile.host}:${profile.port}", style = MaterialTheme.typography.bodyMedium)
+                Text(profile.displayAddress, style = MaterialTheme.typography.bodyMedium)
             }
             TextButton(onClick = onEdit) { Text("Edit") }
             TextButton(onClick = onDelete) { Text("Delete") }
@@ -208,8 +208,8 @@ private fun ProfileEditDialog(
                 OutlinedTextField(
                     value = host,
                     onValueChange = { host = it },
-                    label = { Text("Desktop IP address") },
-                    placeholder = { Text("192.168.1.23") },
+                    label = { Text("Desktop IP address or URL") },
+                    placeholder = { Text("192.168.1.23 or https://your-app.vercel.app") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )

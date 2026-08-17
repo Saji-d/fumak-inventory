@@ -44,3 +44,6 @@ captures/
 # JVM crash artifacts (e.g. from sdkmanager/gradle OOM crashes)
 hs_err_pid*.log
 replay_pid*.log
+
+.vercel
+.env*
