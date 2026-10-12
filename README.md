@@ -1,348 +1,314 @@
 <div align="center">
 
-<img src="logo.jpeg" alt="FUMAK logo" width="140" />
+<img src="assets/banner.svg" alt="FUMAK banner" width="100%">
 
-# FUMAK Inventory & POS System
+<p><code>An Android barcode scanner remote paired with a Next.js inventory, POS and analytics web app for a retail shop</code></p>
 
-**A two-part inventory, point-of-sale, and analytics system for FUMAK — an Android barcode-scanner remote paired with a Next.js desktop web app, built for clothing, shoes, bags, and accessories retail.**
+<p>
+<a href="https://fumak-inventory.vercel.app"><img src="https://img.shields.io/badge/LIVE%20DEMO-fumak--inventory.vercel.app-fbbf24?style=for-the-badge&labelColor=0B0E1A" alt="Live demo"></a>
+<a href="https://github.com/Saji-d/fumak-inventory"><img src="https://img.shields.io/badge/SOURCE-GitHub-8B7CF6?style=for-the-badge&logo=github&logoColor=C084FC&labelColor=0B0E1A" alt="Source"></a>
+<img src="https://img.shields.io/badge/STATUS-Active%20development-6366F1?style=for-the-badge&labelColor=0B0E1A" alt="Status: active development">
+</p>
 
-![Platform](https://img.shields.io/badge/platform-Android%20%2B%20Web-3DDC84?logo=android&logoColor=white)
-![Web](https://img.shields.io/badge/web-Next.js%2016-000000?logo=nextdotjs&logoColor=white)
-![Language](https://img.shields.io/badge/mobile-Kotlin-7F52FF?logo=kotlin&logoColor=white)
-![Database](https://img.shields.io/badge/database-Neon%20PostgreSQL-4169E1?logo=postgresql&logoColor=white)
-![ORM](https://img.shields.io/badge/ORM-Prisma-2D3748?logo=prisma&logoColor=white)
-![Storage](https://img.shields.io/badge/images-Cloudflare%20R2-F38020?logo=cloudflare&logoColor=white)
-![Status](https://img.shields.io/badge/status-active%20development-orange)
+<p>
+<img src="https://img.shields.io/badge/Kotlin-0B0E1A?style=flat-square&logo=kotlin&logoColor=8B7CF6" alt="Kotlin">
+<img src="https://img.shields.io/badge/Jetpack%20Compose-0B0E1A?style=flat-square&logo=jetpackcompose&logoColor=8B7CF6" alt="Jetpack Compose">
+<img src="https://img.shields.io/badge/CameraX%20and%20ML%20Kit-0B0E1A?style=flat-square&logo=android&logoColor=8B7CF6" alt="CameraX and ML Kit">
+<img src="https://img.shields.io/badge/Next.js%2016-0B0E1A?style=flat-square&logo=nextdotjs&logoColor=8B7CF6" alt="Next.js 16">
+<img src="https://img.shields.io/badge/TypeScript-0B0E1A?style=flat-square&logo=typescript&logoColor=8B7CF6" alt="TypeScript">
+<img src="https://img.shields.io/badge/Prisma-0B0E1A?style=flat-square&logo=prisma&logoColor=8B7CF6" alt="Prisma">
+<img src="https://img.shields.io/badge/Neon%20PostgreSQL-0B0E1A?style=flat-square&logo=postgresql&logoColor=8B7CF6" alt="Neon PostgreSQL">
+<img src="https://img.shields.io/badge/Cloudflare%20R2-0B0E1A?style=flat-square&logo=cloudflare&logoColor=8B7CF6" alt="Cloudflare R2">
+<img src="https://img.shields.io/badge/Tailwind%20CSS%204-0B0E1A?style=flat-square&logo=tailwindcss&logoColor=8B7CF6" alt="Tailwind CSS 4">
+</p>
+
+<p>
+<a href="#-overview">Overview</a> · <a href="#-highlights">Highlights</a> · <a href="#-preview">Preview</a> · <a href="#-architecture">Architecture</a> · <a href="#-tech-stack">Tech Stack</a> · <a href="#-getting-started">Getting Started</a> · <a href="#-project-structure">Structure</a> · <a href="#-known-gaps">Known Gaps</a> · <a href="#-roadmap">Roadmap</a> · <a href="#-author">Author</a>
+</p>
 
 </div>
 
----
+<img src="assets/divider.svg" width="100%" alt="">
 
-## Overview
+## ◈ Overview
 
-FUMAK solves a narrow, concrete problem for a single shop: sell physical products (clothing, shoes, bags, accessories) that already carry manufacturer barcodes, look them up fast, keep stock counts accurate, ring up sales with realistic payment details (cart, discounts, partial-payment-free checkout, change), and see revenue numbers over time — without adopting a full point-of-sale or accounting suite.
+FUMAK is built for one shop that sells clothing, shoes, bags and accessories carrying manufacturer barcodes. Staff scan a product with a phone, look it up on the desktop, ring up a sale and watch revenue and stock numbers update, without adopting a full POS or accounting suite.
 
-The system is split across two apps that talk to each other over the local Wi-Fi network:
+It has two apps that talk over the local network:
 
-- **`app/` — FUMAK Scanner (Android).** A thin, purpose-built barcode-scanning remote. It has no database of its own; it only decodes a barcode on-device with ML Kit and POSTs the value to the desktop web app.
-- **`web/` — FUMAK Web (Next.js).** The actual inventory, POS, and analytics application. It owns all product/stock/sales data in a **Neon PostgreSQL** database (via Prisma), stores product photos in **Cloudflare R2**, and is where a staff member runs the shop from a browser (desktop or tablet) while a phone on the counter feeds it scanned barcodes in real time.
+- **`app/` is the Android scanner.** A thin remote with no database. It decodes barcodes on-device with ML Kit and POSTs the value to the web app.
+- **`web/` is the Next.js app.** It owns all product, stock and sales data in Neon PostgreSQL through Prisma. It also stores product photos in Cloudflare R2.
 
-FUMAK is intentionally **not** a general-purpose POS, not an accounting system, and does not generate barcodes — it reads the barcodes already printed on FUMAK's products and builds inventory and sales records around them.
+> **Honest scope.** FUMAK is not a general POS or accounting system and does not generate barcodes. It has no authentication and no automated tests yet (see [Known Gaps](#-known-gaps)).
 
-## Architecture
+<img src="assets/divider.svg" width="100%" alt="">
 
+## ◈ Highlights
+
+<table width="100%">
+<tr>
+<td width="33%" valign="top">
+
+**Phone as a scanner**<br/>
+CameraX and ML Kit decode EAN, UPC, Code 39, 93 and 128 and QR codes fully on-device.
+
+</td>
+<td width="33%" valign="top">
+
+**Live scan feed**<br/>
+The `/sales` page polls the scan queue every second and shows a Connected badge driven by a 5 second heartbeat.
+
+</td>
+<td width="33%" valign="top">
+
+**Point of sale**<br/>
+Multi-item cart with per-line discounts, change calculation, receipts and a cart that survives a page refresh.
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+**Atomic checkout**<br/>
+One database transaction inserts the sale and its items, decrements stock and logs a `SALE` entry per item.
+
+</td>
+<td width="33%" valign="top">
+
+**Inventory audit ledger**<br/>
+Every add, remove, adjust and sale is recorded with the resulting stock level snapshot.
+
+</td>
+<td width="33%" valign="top">
+
+**Accurate profit history**<br/>
+Sale lines keep the selling price, buying cost and discount at the time of sale. Money is stored as integer poisha.
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+**Dashboard and analytics**<br/>
+KPI tiles, category breakdown and period filters (today, month, 3 or 6 months, year, custom) with a revenue chart.
+
+</td>
+<td width="33%" valign="top">
+
+**Product photos**<br/>
+Images are uploaded to Cloudflare R2 and referenced by key, never stored in Postgres.
+
+</td>
+<td width="33%" valign="top">
+
+**Safe deletes**<br/>
+Products are archived rather than removed, so historical sales stay intact.
+
+</td>
+</tr>
+</table>
+
+<img src="assets/divider.svg" width="100%" alt="">
+
+## ◈ Preview
+
+<div align="center">
+<img src="docs/preview.webp" alt="FUMAK inventory and POS preview" width="100%">
+</div>
+
+Open the [live demo](https://fumak-inventory.vercel.app) to browse the web app.
+
+<img src="assets/divider.svg" width="100%" alt="">
+
+## ◈ Architecture
+
+The phone never touches the database or R2. It only knows the desktop LAN address. All business logic lives in the Next.js API routes.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant P as Android scanner
+  participant W as Next.js web app
+  participant Q as In-memory scan queue
+  participant D as Neon PostgreSQL
+  participant R as Cloudflare R2
+  P->>W: POST /api/scanner/events (heartbeat every 5s)
+  P->>W: POST /api/scanner/events (scan: barcode, format)
+  W->>Q: store event
+  loop every 1s on /sales
+    W->>Q: GET /api/scanner/events?since=id
+  end
+  W->>D: look up product by barcode
+  alt unknown barcode
+    W->>D: register new product
+    W->>R: upload photo (optional)
+  end
+  W->>D: checkout (one transaction)
+  Note over W,D: insert Sale and SaleItems, decrement stock, log SALE transactions
+  W->>D: dashboard and analytics queries
 ```
-┌─────────────────────────┐        HTTP POST (LAN Wi-Fi)        ┌──────────────────────────────┐
-│   Android FUMAK Scanner │  /api/scanner/events                │      FUMAK Web (Next.js)     │
-│                          │ ───────────────────────────────────▶│                               │
-│  CameraX + ML Kit        │   { type: "scan", barcode, format }  │  In-memory scan event queue   │
-│  Barcode Scanning        │   { type: "heartbeat" }              │  (polled by the browser)      │
-│                          │                                       │                               │
-│  Saved "Desktop"         │                                       │  /sales page: live scan feed  │
-│  connection profiles     │                                       │  → product lookup → cart →    │
-│  (name, IP, port)        │                                       │    checkout                   │
-└─────────────────────────┘                                       │                               │
-                                                                    │  Prisma ORM                   │
-                                                                    │       │                        │
-                                                                    │       ▼                        │
-                                                                    │  Neon PostgreSQL (products,    │
-                                                                    │  inventory txns, sales, items, │
-                                                                    │  settings)                     │
-                                                                    │                               │
-                                                                    │  Cloudflare R2 (product photos)│
-                                                                    └──────────────────────────────┘
+
+```mermaid
+erDiagram
+  PRODUCT ||--o{ INVENTORY_TRANSACTION : logs
+  PRODUCT ||--o{ SALE_ITEM : sold_as
+  SALE ||--|{ SALE_ITEM : contains
+  SALE ||--o{ INVENTORY_TRANSACTION : causes
+  PRODUCT {
+    int id
+    string barcodeValue
+    string category
+    int buyingPricePoisha
+    int sellingPricePoisha
+    int currentStock
+    string imageKey
+    boolean archived
+  }
+  INVENTORY_TRANSACTION {
+    string type
+    int quantityDelta
+    int resultingStock
+  }
+  SALE {
+    string paymentType
+    int totalAmount
+    int amountPaid
+    int amountDue
+    int changeAmount
+  }
+  SALE_ITEM {
+    int quantity
+    int sellingPriceEachPoisha
+    int buyingCostEachPoisha
+    int discountPoisha
+  }
 ```
 
-The phone never talks to the database or to R2 directly — it only knows the desktop's LAN IP and port. All business logic, validation, and persistence live in the Next.js API routes.
+Scan events and heartbeats live only in server memory (`web/src/lib/scannerEvents.ts`). They are transient signals, not business data.
 
-## Key Features
+<img src="assets/divider.svg" width="100%" alt="">
 
-### Barcode Scanning (Android)
-- Live camera-based barcode scanning using **CameraX** and **Google ML Kit Barcode Scanning**
-- Fully on-device, offline decoding (no network call to *decode* a barcode — only the decoded value is sent onward)
-- Formats configured: `EAN_13`, `EAN_8`, `UPC_A`, `UPC_E`, `CODE_128`, `CODE_39`, `CODE_93`, `QR_CODE`
-- Saved **desktop connection profiles** (e.g. "Home", "Office" — name, IP address, port) so the same phone can pair with different desktops
-- Sends each decoded barcode, plus a periodic heartbeat, to the paired desktop's `POST /api/scanner/events` so the web app can show a live Connected/Disconnected badge even between scans
+## ◈ Tech Stack
 
-### Product Management (Web)
-- Full product catalog: name, category (Clothing / Shoes / Bags / Accessories), color, size/variant, buying price, selling price, current stock, barcode value/format, and an optional product photo
-- Product photos are uploaded to Cloudflare R2 and referenced by key — never stored as binary data in Postgres
-- Look up a scanned barcode against the catalog from the desktop; register a new product on the spot when a barcode isn't recognized
-- Soft-delete only — products are archived, never hard-deleted, so historical sales stay intact
-
-### Inventory Management (Web)
-- Add stock, remove stock, or adjust stock to an absolute counted value
-- Every stock-affecting event — including automatic deductions from a sale — is written to a full audit log (`InventoryTransaction`), with the resulting stock level snapshotted on each entry
-- Low-stock threshold (configurable in Settings) drives low-stock counts on the dashboard
-
-### Point of Sale (Web `/sales`)
-- A live scan panel shows barcodes arriving from the paired phone in real time (short-poll on `/api/scanner/events`) and resolves them against the product catalog
-- Multi-item cart: add/increment items, adjust quantity, apply a per-line discount, remove lines — cart state is mirrored into `sessionStorage` so an accidental refresh doesn't lose it
-- Checkout computes total, amount due, and change live, then atomically (in one DB transaction) inserts the sale + line items, decrements stock, and logs a `SALE` inventory transaction per item
-- A completed sale can only be checked out once the amount paid covers the total — there is no partial-payment/credit tracking
-- Printable/shareable sale receipt with a derived invoice number (`FUMAK-<year>-<sale id>`)
-
-### Dashboard & Analytics (Web)
-- **Dashboard** (`/`): interactive KPI tiles (today's revenue, items sold, gross profit, total stock, low-stock count), a category breakdown, a revenue mini-chart, and the most recent sales
-- **Analytics** (`/analytics`): revenue, items sold, buying cost, gross profit, discounts, amount paid, and amount due for a selected period (Today, Current Month, Last 3/6 Months, Current Year, or a custom date range), plus a tap-to-inspect revenue-over-time bar chart (weekly or monthly buckets)
-- **Settings** (`/settings`): shop-wide low-stock threshold and currency symbol
-
-## Tech Stack
-
-### Android Scanner App (`app/`)
-
-| Layer | Technology | Notes |
+| Layer | Technologies | Purpose |
 |---|---|---|
-| Language | Kotlin | 2.0.21 |
-| UI | Jetpack Compose | Material 3, `compose-bom:2024.09.02` |
-| Navigation | Navigation Compose | `2.8.3` — Scanner ⇄ Desktop Connection settings |
-| Camera | CameraX | `1.3.4` (`camera-core`, `camera-camera2`, `camera-lifecycle`, `camera-view`) |
-| Barcode Scanning | Google ML Kit Barcode Scanning | `17.3.0`, on-device/bundled model |
-| Networking | `java.net.HttpURLConnection` | Deliberately dependency-free — one fire-and-forget POST doesn't justify Retrofit/OkHttp |
-| Build System | Gradle (Kotlin DSL) | Gradle `8.9`, Android Gradle Plugin `8.6.0` |
-| Android SDK | `minSdk 24` / `compileSdk 35` / `targetSdk 35` | Java 17 toolchain |
+| Android | Kotlin, Jetpack Compose (Material 3), Navigation Compose | Scanner UI and desktop connection profiles |
+| Scanning | CameraX, Google ML Kit Barcode Scanning | On-device barcode decoding |
+| Networking | `HttpURLConnection` | One dependency-free POST for scans and heartbeats |
+| Web | Next.js 16 (App Router), React 19, TypeScript | POS, inventory and analytics UI plus API routes |
+| Styling | Tailwind CSS v4, lucide-react | Interface |
+| Data | Prisma 6, Neon PostgreSQL | Products, sales, ledger and settings |
+| Storage | Cloudflare R2 through `@aws-sdk/client-s3` | Product photos only |
+| Charts | Recharts | Revenue over time |
+| Build | Gradle (Kotlin DSL), minSdk 24, compileSdk 35 | Android build |
 
-### Web App (`web/`)
+<img src="assets/divider.svg" width="100%" alt="">
 
-| Layer | Technology | Notes |
-|---|---|---|
-| Framework | Next.js | `16.3.0`, App Router, React `19.2.8` |
-| Language | TypeScript | |
-| Styling | Tailwind CSS | `v4` |
-| Database | Neon PostgreSQL | Serverless Postgres, accessed via `DATABASE_URL` |
-| ORM | Prisma | `6.19.3`, generated client output to `src/generated/prisma` |
-| Object Storage | Cloudflare R2 | S3-compatible, via `@aws-sdk/client-s3`; holds product photos only |
-| Charts | Recharts | `3.10.1` |
-| Icons | lucide-react | |
+## ◈ Getting Started
 
-## Data Model
+### Web app (start here)
 
-The web app's Prisma schema (`web/prisma/schema.prisma`) is the single source of truth, persisted in Neon PostgreSQL. Monetary fields are stored as integer **poisha** (1/100 BDT) to avoid floating-point rounding drift.
+**Prerequisites:** Node.js 20 or newer, a Neon PostgreSQL database and optionally a Cloudflare R2 bucket for product photos.
 
-| Model | Table | Purpose |
-|---|---|---|
-| `Product` | `Product` | A sellable item: barcode value (unique), name, category, color, variant, buying/selling price, current stock, `imageKey` (R2 object key, or `null`), `archived` flag. |
-| `InventoryTransaction` | `InventoryTransaction` | Full audit log of every stock change — `ADD`, `REMOVE`, `ADJUST`, or `SALE` — with the signed quantity delta, the resulting stock level snapshotted on each row, and an optional link back to the `Sale` that caused it. |
-| `Sale` | `Sale` | The header of a completed sale: timestamp, payment type (`CASH` / `CARD` / `MOBILE_MONEY` / `OTHER`), total amount, amount paid, amount due, change amount. |
-| `SaleItem` | `SaleItem` | The product line within a sale: quantity, plus selling price / buying cost / discount **as they were at the time of sale**, so historical gross-profit figures stay correct even after a product's prices later change. |
-| `AppSettings` | `AppSettings` | Single-row shop settings: low-stock threshold, currency symbol. |
-
-## Barcode Scanning → POS Pipeline
-
-```
-Phone Camera
-     │
-     ▼
-CameraX (image analysis stream)
-     │
-     ▼
-Google ML Kit Barcode Scanning (on-device decode)
-     │
-     ▼
-BarcodeSender ── POST http://<desktop-ip>:<port>/api/scanner/events
-     │              { type: "scan", barcode, format }
-     ▼
-Desktop web app: in-memory scan event queue (per-server-instance)
-     │
-     ▼
-/sales page polls GET /api/scanner/events?since=<id>
-     │
-     ▼
-Product Lookup ──── not found ────▶ Register New Product
-     │ found
-     ▼
-Add to Cart ──▶ Set quantity / discount ──▶ Checkout
-     │
-     ▼
-Atomic transaction: insert Sale + SaleItem(s), decrement stock,
-log SALE inventory transactions
-     │
-     ▼
-Dashboard + Analytics (summaries + chart)
+```bash
+cd web
+npm install
 ```
 
-Scan events and the connection heartbeat live only in server memory (`web/src/lib/scannerEvents.ts`) — they're transient session signaling, not business data, so a dev-server restart just costs one more heartbeat, not a lost sale.
+Create `web/.env` with these variable names (set your own values):
 
-## Pairing the Scanner with the Desktop
-
-1. Start the web app (see [Getting Started](#getting-started)) and note the LAN IP address and port it's listening on (default port `3000`).
-2. On the phone, open **Desktop Connection** in the FUMAK Scanner app and tap **+** to add a profile: a name (e.g. "Shop Counter"), the desktop's IP address, and its port.
-3. Select that profile as active. The phone begins sending a periodic heartbeat plus any scanned barcodes to `http://<ip>:<port>/api/scanner/events`.
-4. On the desktop, open `/sales` — the scan panel shows a live Connected/Disconnected status and any barcode scanned on the phone appears there for lookup.
-
-> Both devices must be on the same local network. If `next dev` falls back to a port other than 3000 (because something else is already using it), either restart it with `next dev -p 3000` or update the phone's connection profile to match the port actually printed in the terminal — a mismatch shows no error, scans just silently do nothing on `/sales`.
-
-## Local Data Storage
-
-- **Neon PostgreSQL** is the system of record for every product, inventory transaction, sale, and setting — a managed, cloud-hosted Postgres database reached via `DATABASE_URL`.
-- **Cloudflare R2** stores product photo bytes only, referenced from `Product.imageKey`; nothing else is stored there.
-- The Android app itself is stateless aside from its locally-saved desktop connection profiles — it has no database and does not cache scanned data.
-- Scan/heartbeat events are transient, in-memory on the Next.js server, and are not persisted.
-
-## Project Structure
-
+```bash
+DATABASE_URL=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_ENDPOINT=
+R2_BUCKET_NAME=
 ```
+
+The R2 variables are only needed for product photos.
+
+```bash
+npx prisma migrate deploy
+npx prisma generate
+npm run db:seed              # optional sample data
+npm run dev -- -p 3000       # http://localhost:3000
+```
+
+### Android scanner
+
+**Prerequisites:** Android Studio, a JDK 17 toolchain and a device or emulator on API 24 or newer, on the same network as the web app.
+
+```bash
+git clone https://github.com/Saji-d/fumak-inventory.git
+cd fumak-inventory
+./gradlew assembleDebug      # use gradlew.bat on Windows
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+### Pairing
+
+1. Run the web app and note the desktop's LAN IP and port.
+2. In the app, open **Desktop Connection**, add a profile (name, IP, port) and select it.
+3. Open `/sales` on the desktop. A Connected badge appears and scanned barcodes show up in the scan panel.
+
+The live Vercel deployment hosts the web app. Because the scan queue is in server memory, scanner pairing is designed for a web server running on your own network, so run it locally to try the scanner.
+
+<img src="assets/divider.svg" width="100%" alt="">
+
+## ◈ Project Structure
+
+<details>
+<summary><strong>Show the tree</strong></summary>
+
+```text
 app/src/main/kotlin/com/fumak/scanner/
-├── scanner/                       # Camera + ML Kit barcode decoding
-│   ├── BarcodeScannerEngine.kt
-│   ├── MlKitBarcodeScannerEngine.kt
-│   ├── BarcodeFormat.kt
-│   ├── BarcodeScanResult.kt
-│   └── ScannerConfig.kt
-│
-├── network/
-│   └── BarcodeSender.kt          # POSTs scans/heartbeats to the paired desktop
-│
-├── data/connection/
-│   ├── ConnectionProfile.kt      # name, host, port → baseUrl
-│   └── ConnectionProfileStore.kt # local persistence of saved desktop profiles
-│
-├── ui/
-│   ├── nav/                      # Route definitions, FumakNavHost (Scanner ⇄ Connections)
-│   ├── connection/                # ConnectionSettingsScreen — add/edit/select desktops
-│   └── scanner/                   # SendViewModel
-│
-├── AppContainer.kt                # Hand-rolled dependency container (no DI framework)
-├── FumakApplication.kt            # Owns AppContainer for the app's lifetime
-└── MainActivity.kt                # Hosts the NavHost; camera/permission logic for the Scanner screen
+├── scanner/              # CameraX and ML Kit decoding
+├── network/              # BarcodeSender (scans and heartbeats)
+├── data/connection/      # saved desktop connection profiles
+├── ui/                   # navigation, connection settings, scanner view model
+└── MainActivity.kt
 
-web/src/
-├── app/
-│   ├── page.tsx                   # Dashboard
-│   ├── products/                  # Product list, detail, and "new product" pages
-│   ├── inventory/                 # Stock adjustment + inventory history
-│   ├── sales/                     # POS: scan panel, cart, checkout, sale history/detail
-│   ├── analytics/                 # Period filters + revenue chart
-│   ├── settings/                  # Low-stock threshold, currency symbol
-│   └── api/                       # Route handlers: products, inventory, sales, analytics,
-│                                   #   dashboard, settings, scanner/events, product images
-│
-├── components/
-│   ├── pos/                       # ScanPanel, CartPanel, CheckoutPanel, SaleReceipt, ...
-│   ├── products/                  # ProductForm, ProductImageField
-│   ├── charts/                    # RevenueChart (Recharts)
-│   ├── layout/                    # AppShell, Sidebar, TopBar
-│   └── ui/                        # StatCard, Table, Toast, Badge, ConfirmDialog, ...
-│
-├── lib/                            # db.ts (Prisma singleton), r2.ts (image storage),
-│                                   #   pos.ts (cart reducer + sale math), analytics.ts,
-│                                   #   scannerEvents.ts, money.ts, types.ts, ...
-│
-└── generated/prisma/               # Generated Prisma client (not hand-edited)
-
-web/prisma/
-├── schema.prisma                   # Product, InventoryTransaction, Sale, SaleItem, AppSettings
-├── migrations/
-└── seed.ts
+web/
+├── prisma/               # schema.prisma, migrations, seed.ts
+└── src/
+    ├── app/              # pages: dashboard, products, inventory, sales, analytics, settings
+    │   └── api/          # route handlers: products, inventory, sales, analytics, scanner/events, ...
+    ├── components/       # pos, products, charts, layout, ui
+    └── lib/              # db, r2, pos, analytics, scannerEvents, money, ...
 ```
 
-## Getting Started
+</details>
 
-### Web app (`web/`) — required first, the Android app is only useful once this is running
+<img src="assets/divider.svg" width="100%" alt="">
 
-**Prerequisites**: Node.js 20+, a Neon PostgreSQL database, and (optionally) a Cloudflare R2 bucket for product photos.
+## ◈ Known Gaps
 
-1. Install dependencies:
-   ```bash
-   cd web
-   npm install
-   ```
-2. Create `web/.env` with:
-   ```bash
-   DATABASE_URL=postgresql://...           # Neon connection string
+- No authentication or user roles: anyone who can reach the URL can operate the app.
+- No automated tests. Verification is manual.
+- No partial payments or credit: a sale completes only when the amount paid covers the total.
+- Scan events are ephemeral and LAN-only. There is no remote pairing.
+- The Android debug build permits cleartext HTTP so it can reach a LAN dev server.
 
-   R2_ACCESS_KEY_ID=...
-   R2_SECRET_ACCESS_KEY=...
-   R2_ENDPOINT=...                          # e.g. https://<account-id>.r2.cloudflarestorage.com
-   R2_BUCKET_NAME=...
-   ```
-   The R2 variables are only needed for product photo upload/serving; the rest of the app works without them.
-3. Apply Prisma migrations and generate the client:
-   ```bash
-   npx prisma migrate deploy
-   npx prisma generate
-   ```
-4. (Optional) Seed sample data:
-   ```bash
-   npm run db:seed
-   ```
-5. Start the dev server, pinned to port 3000 so the Android app's default connection profile matches it:
-   ```bash
-   npm run dev -- -p 3000
-   ```
-6. Open `http://localhost:3000` — or `http://<your-lan-ip>:3000` from another device on the same network.
+## ◈ Roadmap
 
-### Android Scanner app (`app/`)
+- [x] Android scanner, product and inventory management, POS checkout, dashboard and analytics
+- [ ] Authentication and user roles
+- [ ] Automated tests for the sale math and API routes
+- [ ] Partial-payment and credit tracking
+- [ ] Supplier management and multi-location support
+- [ ] Remote (non-LAN) scanner pairing
 
-**Prerequisites**: Android Studio (Koala or newer recommended), a JDK 17 toolchain, and either a physical Android device (API 24+) with USB debugging or an emulator — plus the web app already running and reachable on the same Wi-Fi network.
+<img src="assets/divider.svg" width="100%" alt="">
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Saji-d/fumak-inventory.git
-   cd fumak-inventory
-   ```
-2. Open the project folder in Android Studio and let Gradle sync (it downloads the Gradle 8.9 distribution and dependencies on first sync).
-3. Connect an Android device over USB, or start an emulator from the Device Manager.
-4. If using a physical device, enable **Developer Options** and **USB Debugging** (Settings → About Phone → tap "Build number" 7 times → Settings → Developer Options → USB Debugging).
-5. Run the app from Android Studio (**Run ▸ Run 'app'**), or from the command line:
-   ```bash
-   # Windows
-   .\gradlew.bat assembleDebug
-   adb install -r app\build\outputs\apk\debug\app-debug.apk
+## ◈ Author
 
-   # macOS / Linux
-   ./gradlew assembleDebug
-   adb install -r app/build/outputs/apk/debug/app-debug.apk
-   ```
-   > On Windows, prefer `gradlew.bat` — the POSIX `gradlew` script's default JVM options are not reliably parsed by all Windows shells.
-6. On first launch, grant the requested **Camera** permission, then follow [Pairing the Scanner with the Desktop](#pairing-the-scanner-with-the-desktop) above.
+**Sajidur Rahman Sajid**: Full-Stack Developer and AI engineer from Dhaka.
 
-## Testing
+<p>
+<a href="https://www.sajidur.me"><img src="https://img.shields.io/badge/Portfolio-0B0E1A?style=for-the-badge&logo=googlechrome&logoColor=9B8CFA" alt="Portfolio"></a>
+<a href="https://www.linkedin.com/in/sajidur-rahman-sajid/"><img src="https://img.shields.io/badge/LinkedIn-0B0E1A?style=for-the-badge&logo=linkedin&logoColor=8B7CF6" alt="LinkedIn"></a>
+<a href="https://github.com/Saji-d"><img src="https://img.shields.io/badge/GitHub-0B0E1A?style=for-the-badge&logo=github&logoColor=EEF0FA" alt="GitHub"></a>
+<a href="mailto:sajidsajidurrahman99@gmail.com"><img src="https://img.shields.io/badge/Email-0B0E1A?style=for-the-badge&logo=gmail&logoColor=9B8CFA" alt="Email"></a>
+</p>
 
-There is no automated test suite yet; verification is manual:
-
-1. **Camera permission** — first launch should prompt for Camera access; denying it should show the in-app permission message instead of crashing.
-2. **Pairing** — add a desktop connection profile with the web app's LAN IP/port and confirm `/sales` shows "Connected" within a few seconds (via the heartbeat).
-3. **Real barcode scanning** — scan a real product barcode on the phone and confirm it appears in the desktop's scan panel.
-4. **Existing product lookup** — scan a barcode already registered in the catalog and confirm it resolves to the correct product.
-5. **New product registration** — scan an unrecognized barcode, register a new product from the desktop, and confirm scanning the same barcode again resolves to it.
-6. **Inventory changes** — use Add / Remove / Adjust on a product and confirm stock updates and a corresponding entry appears in its transaction history.
-7. **POS checkout** — build a multi-item cart with a discount, complete checkout, and confirm the total/change are correct and stock decreases by the sold quantities.
-8. **Dashboard & Analytics** — after a sale, confirm it's reflected in the dashboard KPIs and the relevant analytics period, and that switching period/chart-range filters updates the numbers.
-
-## Current Limitations
-
-- **Single shop, single desktop session model** — there is no authentication/user roles; anyone with the app URL on the LAN can operate it.
-- **No partial-payment/credit tracking** — a sale can only be completed once the amount paid covers the total; there's no way to record and later collect an outstanding balance.
-- **No full accounting system** — no tax handling, no double-entry bookkeeping, no payroll.
-- **No barcode generation** — the system only reads barcodes already printed on FUMAK's products.
-- **No automated tests** — verification is currently manual.
-- **Scan events are ephemeral** — they live in the Next.js server's memory only; a server restart mid-scan just requires one more heartbeat, but no scan history is retained beyond what was turned into a product lookup or sale.
-- **LAN-only pairing** — the phone and desktop must be reachable on the same local network; there's no remote/internet pairing path.
-
-## Roadmap
-
-**Currently implemented** (see [Key Features](#key-features) above): Android barcode-scanning remote with desktop pairing, full product/inventory/sales management on the web app, POS cart checkout, dashboard, and period-filtered revenue analytics — backed by Neon PostgreSQL and Cloudflare R2.
-
-**Future ideas** (not implemented — listed for direction only):
-- Authentication and user roles
-- Supplier management
-- Partial-payment / credit (debtor) tracking
-- Multi-shop / multi-location support
-- Remote (non-LAN) scanner pairing
-- More advanced reporting
-
-## Screenshots
-
-No in-app screenshots are currently checked into this repository. This section will be updated once they're available.
-
-## License
-
-This project currently has no explicit license file. All rights are reserved by default until a license is added.
-
-## Author
-
-**Sajidur Rahman Sajid**
-
-- GitHub: [github.com/Saji-d](https://github.com/Saji-d)
-- Portfolio: [sajidur.me](https://sajidur.me)
+<sub>No licence file is included, so all rights are reserved.</sub>
