@@ -23,7 +23,7 @@
 </p>
 
 <p>
-<a href="#-overview">Overview</a> · <a href="#-highlights">Highlights</a> · <a href="#-preview">Preview</a> · <a href="#-architecture">Architecture</a> · <a href="#-tech-stack">Tech Stack</a> · <a href="#-getting-started">Getting Started</a> · <a href="#-project-structure">Structure</a> · <a href="#-known-gaps">Known Gaps</a> · <a href="#-roadmap">Roadmap</a> · <a href="#-author">Author</a>
+<a href="#-overview">Overview</a> · <a href="#-highlights">Highlights</a> · <a href="#-preview">Preview</a> · <a href="#-architecture">Architecture</a> · <a href="#-tech-stack">Tech Stack</a> · <a href="#-getting-started">Getting Started</a> · <a href="#-project-structure">Structure</a> · <a href="#-author">Author</a>
 </p>
 
 </div>
@@ -39,7 +39,7 @@ It has two apps that talk over the local network:
 - **`app/` is the Android scanner.** A thin remote with no database. It decodes barcodes on-device with ML Kit and POSTs the value to the web app.
 - **`web/` is the Next.js app.** It owns all product, stock and sales data in Neon PostgreSQL through Prisma. It also stores product photos in Cloudflare R2.
 
-> **Honest scope.** FUMAK is not a general POS or accounting system and does not generate barcodes. It has no authentication and no automated tests yet (see [Known Gaps](#-known-gaps)).
+> **Honest scope.** FUMAK is not a general POS or accounting system and does not generate barcodes. It has no authentication and no automated tests yet.
 
 <img src="assets/divider.svg" width="100%" alt="">
 
@@ -257,8 +257,10 @@ The live Vercel deployment hosts the web app. Because the scan queue is in serve
 
 ## ◈ Project Structure
 
+`app/` is the Android scanner and `web/` is the Next.js app with its Prisma schema and API routes.
+
 <details>
-<summary><strong>Show the tree</strong></summary>
+<summary>Open the folder map</summary>
 
 ```text
 app/src/main/kotlin/com/fumak/scanner/
@@ -281,34 +283,16 @@ web/
 
 <img src="assets/divider.svg" width="100%" alt="">
 
-## ◈ Known Gaps
-
-- No authentication or user roles: anyone who can reach the URL can operate the app.
-- No automated tests. Verification is manual.
-- No partial payments or credit: a sale completes only when the amount paid covers the total.
-- Scan events are ephemeral and LAN-only. There is no remote pairing.
-- The Android debug build permits cleartext HTTP so it can reach a LAN dev server.
-
-## ◈ Roadmap
-
-- [x] Android scanner, product and inventory management, POS checkout, dashboard and analytics
-- [ ] Authentication and user roles
-- [ ] Automated tests for the sale math and API routes
-- [ ] Partial-payment and credit tracking
-- [ ] Supplier management and multi-location support
-- [ ] Remote (non-LAN) scanner pairing
-
-<img src="assets/divider.svg" width="100%" alt="">
-
 ## ◈ Author
 
-**Sajidur Rahman Sajid**: Full-Stack Developer and AI engineer from Dhaka.
+**Sajidur Rahman Sajid**: Full-Stack Developer and AI engineer from Dhaka.<br>
+BSc in CSE at American International University-Bangladesh (AIUB).
 
 <p>
-<a href="https://www.sajidur.me"><img src="https://img.shields.io/badge/Portfolio-0B0E1A?style=for-the-badge&logo=googlechrome&logoColor=9B8CFA" alt="Portfolio"></a>
-<a href="https://www.linkedin.com/in/sajidur-rahman-sajid/"><img src="https://img.shields.io/badge/LinkedIn-0B0E1A?style=for-the-badge&logo=linkedin&logoColor=8B7CF6" alt="LinkedIn"></a>
-<a href="https://github.com/Saji-d"><img src="https://img.shields.io/badge/GitHub-0B0E1A?style=for-the-badge&logo=github&logoColor=EEF0FA" alt="GitHub"></a>
-<a href="mailto:sajidsajidurrahman99@gmail.com"><img src="https://img.shields.io/badge/Email-0B0E1A?style=for-the-badge&logo=gmail&logoColor=9B8CFA" alt="Email"></a>
+  <a href="https://www.sajidur.me"><img src="https://img.shields.io/badge/Portfolio-0B0E1A?style=flat-square&logo=googlechrome&logoColor=9B8CFA" alt="Portfolio"></a>
+  <a href="https://www.linkedin.com/in/sajidur-rahman-sajid/"><img src="https://img.shields.io/badge/LinkedIn-0B0E1A?style=flat-square&logo=linkedin&logoColor=8B7CF6" alt="LinkedIn"></a>
+  <a href="https://github.com/Saji-d"><img src="https://img.shields.io/badge/GitHub-0B0E1A?style=flat-square&logo=github&logoColor=EEF0FA" alt="GitHub"></a>
+  <a href="mailto:sajidsajidurrahman99@gmail.com"><img src="https://img.shields.io/badge/Email-0B0E1A?style=flat-square&logo=gmail&logoColor=9B8CFA" alt="Email"></a>
 </p>
 
 <sub>No licence file is included, so all rights are reserved.</sub>
